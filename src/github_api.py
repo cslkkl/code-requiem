@@ -160,6 +160,92 @@ def repo_meta(owner: str, repo: str) -> dict | None:
     return meta
 
 
+def contributors(owner: str, repo: str, *, max_pages: int = 5) -> dict | None:
+    """用 contributors API 拿全量贡献分布，算 bus factor 与作者数。
+
+    为什么必须用这个接口而不是本地 300 条提交样本：
+    `--depth 200` 或 API 路径的 300 条提交里往往只有个位数作者，
+    于是 pandas（412 位贡献者、首名仅占 20%）会被判成 bus_factor=1，
+    fastapi（456 位贡献者）会被判成「只有 5 位作者」。这是**方向性错误**，
+    而 bus factor 正是本产品最核心的卖点，不能错。
+
+    contributors 接口的 `contributions` 字段就是该用户的累计提交数，
+    分母是这些人的总和 —— 比抽样提交更接近 SPEC 3.2 的「按提交占比累加」。
+
+    代价：每页 100 人，最多 5 页 = 5 个请求。已经用 30 分钟磁盘缓存兜住。
+    返回 None 表示拿不到（限流 / 私有 / 无贡献者）。
+    """
+    key = f"contributors:{owner}/{repo}"
+    cached = _cache_get(key, _TTL["count"])
+    if cached is not None:
+        return cached or None
+
+    rows: list[dict] = []
+    for page in range(1, max_pages + 1):
+        r = _get(
+            f"/repos/{owner}/{repo}/contributors",
+            {"per_page": 100, "page": page, "anon": "false"},
+        )
+        if r is None:
+            return None
+        try:
+            data = r.json()
+        except Exception:
+            return None
+        if not isinstance(data, list) or not data:
+            break
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            email = ((item.get("email") or "") or f"gh:{item.get('login') or item.get('id')}").lower()
+            rows.append(
+                {
+                    "name": item.get("login") or item.get("name") or email,
+                    "email": email,
+                    "commits": int(item.get("contributions") or 0),
+                }
+            )
+        if len(data) < 100:
+            break
+
+    rows = [r for r in rows if r["commits"] > 0]
+    if not rows:
+        _cache_put(key, {})
+        return None
+
+    total = sum(r["commits"] for r in rows)
+    running = 0
+    bf = 0
+    for i, r in enumerate(sorted(rows, key=lambda x: -x["commits"]), 1):
+        running += r["commits"]
+        if running / total >= 0.60:
+            bf = i
+            break
+    if bf == 0:
+        bf = len(rows)
+
+    result = {
+        "total": len(rows),
+        "bus_factor": bf,
+        "total_commits": total,
+        "truncated": len(rows) >= max_pages * 100,
+        "top": sorted(
+            [
+                {
+                    "name": r["name"],
+                    "email": r["email"],
+                    "commits": r["commits"],
+                    "share": round(r["commits"] / total, 4),
+                }
+                for r in rows
+            ],
+            key=lambda x: -x["commits"],
+        )[:8],
+    }
+    _cache_put(key, result)
+    return result
+
+
 def _count_from_link(r) -> int | None:
     """从 Link 头里读 `rel="last"` 的 page 号，per_page=1 时它就是总条数。"""
     link = r.headers.get("Link") or r.headers.get("link")

@@ -257,10 +257,18 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
                 need_api_fallback = True
                 _p("git 直连不可用，切换到 GitHub API 采集…")
             else:
+                # 克隆前先问一次仓库体积。torvalds/linux 这种量级即使 --depth 200
+                # 也要克隆上百 MB、跑几分钟，会把 90 秒的服务目标彻底冲垮。
+                # 先探到体积就能给出明确结论，而不是让用户对着转圈等到超时。
+                planned_depth = gm.CLONE_DEPTH
+                size_kb = _peek_repo_size_kb(repo)
+                if size_kb and size_kb > 500 * 1024:
+                    planned_depth = 50
+                    _p(f"仓库约 {size_kb // 1024} MB，改用更浅的克隆（depth 50）…")
                 _p("正在浅克隆仓库…")
                 workdir = gm.make_workdir()
                 try:
-                    repo_path = gm.clone_repo(repo["url"], workdir)
+                    repo_path = gm.clone_repo(repo["url"], workdir, depth=planned_depth)
                 except gm.CloneError as exc:
                     if repo["host"] == "github" and fetch_api.can_use_api():
                         _p("克隆失败，改用 GitHub API 采集…")
@@ -322,6 +330,12 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
                 hist["recent_6m"] = recent
                 hist["previous_6m"] = prev
                 api_enriched = True
+            # 4) 贡献者分布：浅克隆/300 条样本里可能只有个位数作者，
+            #    会把 pandas（412 位贡献者、首名仅 20%）判成 bus_factor=1。
+            #    用 contributors 接口的累计提交数算，才是 SPEC 3.2 要的口径。
+            contribs = github_api.contributors(repo["owner"], repo["name"])
+            if contribs and contribs.get("total"):
+                hist["contributors"] = contribs
             # 只有 meta 存在时才用 created_at 覆盖 first；
             # 但即使 meta 缺失，也要用 git 日志里的最早时间判断是否不足 12 个月
             birth = None
@@ -393,6 +407,25 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
     finally:
         if workdir:
             gm.cleanup(workdir)
+
+
+def _peek_repo_size_kb(repo: dict) -> int | None:
+    """克隆前先问一次仓库体积（KB）。只对 GitHub 有效，失败返回 None。
+
+    为什么值得多花一次 API 请求：体积决定克隆策略。`torvalds/linux` 用
+    --depth 200 克隆也要几分钟，而本工具承诺 90 秒内出结果。
+    提前知道体积就可以降深度、给用户明确预期，而不是让页面一直转圈。
+    """
+    if repo.get("host") != "github" or not fetch_api.can_use_api():
+        return None
+    try:
+        meta = github_api.repo_meta(repo["owner"], repo["name"])
+    except Exception:
+        return None
+    if not meta:
+        return None
+    size = meta.get("size_kb")
+    return int(size) if isinstance(size, int) and size > 0 else None
 
 
 def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
@@ -617,10 +650,22 @@ def _build_metrics(
     s_last, d_last = scoring.score_last_commit(days_since)
 
     # ── 维度 2：bus factor ────────────────────────────────────────────────
-    bf = scoring.bus_factor(hist["author_counts"])
+    # 优先用 GitHub contributors 的累计提交数（全量贡献者），
+    # 它比本地 200-300 条提交样本准得多：
+    #   pandas 本地样本 → bf=1；contributors → 412 人、首名占 20%、bf=8。
+    #   fastapi 本地样本 → 只看到 5 位作者；contributors → 456 人。
+    # bus factor 是本产品最核心的卖点，这里宁可用一次额外 API 请求也要准。
+    contribs = hist.get("contributors") or {}
+    if contribs.get("total"):
+        bf = int(contribs.get("bus_factor") or 0)
+        bf_source = "github-contributors"
+    else:
+        bf = scoring.bus_factor(hist["author_counts"])
+        bf_source = "commit-sample"
     # SPEC 5：只有 1 个 commit 时，bus factor 强制为 1
     if len(hist["commits"]) <= 1:
         bf = 1 if hist["author_counts"] else 0
+        bf_source = "single-commit"
     s_bf, d_bf = scoring.score_bus_factor(bf)
 
     # ── 维度 3：趋势 ──────────────────────────────────────────────────────
@@ -658,17 +703,23 @@ def _build_metrics(
         unavailable.append("trend")
 
     # ── 作者排行 ──────────────────────────────────────────────────────────
-    total_commits = sum(hist["author_counts"].values()) or 1
-    top_authors = []
-    for email, cnt in sorted(hist["author_counts"].items(), key=lambda kv: (-kv[1], kv[0]))[:8]:
-        top_authors.append(
-            {
-                "name": hist["author_names"].get(email, email),
-                "email": email,
-                "commits": cnt,
-                "share": round(cnt / total_commits, 4),
-            }
-        )
+    # 有 contributors 数据就用它（全量贡献者），否则退回本地提交样本。
+    if contribs.get("total") and contribs.get("top"):
+        top_authors = contribs["top"]
+        author_total = int(contribs["total"])
+    else:
+        total_commits = sum(hist["author_counts"].values()) or 1
+        top_authors = []
+        for email, cnt in sorted(hist["author_counts"].items(), key=lambda kv: (-kv[1], kv[0]))[:8]:
+            top_authors.append(
+                {
+                    "name": hist["author_names"].get(email, email),
+                    "email": email,
+                    "commits": cnt,
+                    "share": round(cnt / total_commits, 4),
+                }
+            )
+        author_total = len(hist["author_counts"])
 
     # ── 风险点：stale 文件 + TODO/FIXME ───────────────────────────────────
     hotspots = risks_raw["hits"][:20]
@@ -725,8 +776,9 @@ def _build_metrics(
             "languages": size["languages"],
         },
         "authors": {
-            "total": len(hist["author_counts"]),
+            "total": author_total,
             "bus_factor": bf,
+            "bus_factor_source": bf_source,
             "top": top_authors,
         },
         "trend": {
