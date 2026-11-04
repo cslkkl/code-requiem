@@ -1,0 +1,30 @@
+# 代码安魂曲 / Code Requiem — 运行依赖
+#
+# 只列运行必需项，不含测试 / 开发依赖。
+# 版本取自本项目 .venv 实测锁定（Python 3.12.10 / Windows x64），
+# 目的是让 HF Spaces 的构建结果与本地完全一致，避免上游发版导致行为漂移。
+#
+# 安装：
+#   uv pip install --python .venv\Scripts\python.exe -r requirements.txt
+#
+# 注意：本文件不含任何密钥。HF_TOKEN 只允许放在 HF Spaces 的 Secrets 里。
+
+# ── 四个直接依赖 ──────────────────────────────────────────────────────────────
+gitpython==3.2.1
+streamlit==1.66.1
+huggingface_hub==2.4.0
+requests==2.34.2
+
+# ── 直接必需品（上面四个会自动拉取，此处显式锁定以免版本漂移）────────────────
+# GitPython 的底层对象库
+gitdb==4.0.12
+smmap==5.0.3
+
+# requests 的四个必需依赖
+certifi==2026.10.23
+charset-normalizer==3.5.2
+idna==3.20
+urllib3==2.8.0
+
+# streamlit / huggingface_hub 的其余传递依赖（pandas、numpy、pyarrow、altair、
+# starlette、uvicorn 等）由 pip 解析，不在此处硬钉，以免跨平台平台标记冲突。

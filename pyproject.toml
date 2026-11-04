@@ -1,0 +1,30 @@
+[project]
+name = "code-requiem"
+version = "1.0.0"
+description = "给任意 Git 仓库打健康分，并生成代码遗嘱 / 项目悼词"
+requires-python = ">=3.11"
+dependencies = [
+    "gitpython>=3.1.40",
+    "streamlit>=1.30",
+    "huggingface_hub>=0.23",
+    "requests>=2.31",
+]
+
+[project.urls]
+Repository = "https://github.com/cslkkl/code-requiem"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+exclude = [".venv", "docs"]
+
+[tool.ruff.lint]
+# E/F 是基础错误与未使用导入；I 是导入排序。
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]  # 长中文注释与表格字符串不强行折行
+
+[tool.ruff.lint.per-file-ignores]
+# 分析器需要在脚本模式与包模式下都能导入，显式 try/except 双导入
+"src/analyzer.py" = ["E402"]
+"src/issues.py" = ["E402"]
+"src/fetch_api.py" = ["E402"]

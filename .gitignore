@@ -1,0 +1,33 @@
+# ── Python ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ── 密钥与本地配置（硬性红线：绝不进公开仓库）──────────────
+.env
+.env.*
+!.env.example
+secrets.toml
+.streamlit/secrets.toml
+*.pem
+*.key
+credentials*.yaml
+
+# ── 分析产物 ───────────────────────────────────────────────
+out/
+*.json.out
+requiem-*/
+/tmp/
+
+# ── 系统与编辑器 ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
