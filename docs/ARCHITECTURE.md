@@ -47,7 +47,7 @@ GitHub 匿名 API 限流 60 次/小时。一次完整分析要 6-14 个请求。
 
 ## 契约
 
-模块间接口唯一事实来源：[docs/CONTRACT.md](docs/CONTRACT.md)。
+模块间接口唯一事实来源：[CONTRACT.md](CONTRACT.md)。
 
 改动契约必须先改 CONTRACT.md，并在 commit message 里写明。
 

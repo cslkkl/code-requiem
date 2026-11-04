@@ -42,21 +42,43 @@ git -c "http.https://github.com/.proxy=" push origin main
 ## 验证快照
 
 - 单元测试：43 passed（2026-11-04）
-- Lint：ruff clean（2026-11-04）
-- 真实仓库验证：kornia/kornia → 93 分 / dsh-cpa-switch → 56 分 / facebookarchive/caffe2 → 14 分
+- Lint：ruff clean（2026-11-05）
+- 真实仓库验证（`scripts/verify_live.py`，结果见 [docs/verification.json](docs/verification.json)）
+  - `kornia/kornia` → 85 分 / alive / bus factor 4
+  - `cslkkl/code-requiem` → 54 分 / critical / bus factor 1
+  - `livid/v2ex-gae` → 24 分 / dead / 享年 7 年 4 个月
+- 确定性：同一仓库两次运行分数与指纹完全一致（已由 `test_boundary.py` 与 `verify_live.py` 双重验证）
+
+## 待办
+
+- [ ] HF Spaces 部署（需要 `HF_TOKEN`，尚未拿到）
+- [ ] `docs/screenshots/main.png` 界面截图
+- [ ] 60-90 秒演示视频
+- [ ] Devpost 七项提交（`docs/DEVPOST.md` 已备好，`[HF_SPACE_URL]` 待填）
 
 ## 活跃坑
 
-- **github.com:443 间歇性不可达**：已加 TCP 探测 + API 兜底，见 `src/net.py` / `src/fetch_api.py`
-- **GitHub 匿名 API 限流 60 次/小时**：已加磁盘缓存 + 配额感知，配置 `GITHUB_TOKEN` 提升到 5000 次/小时
-- **Windows GBK 控制台**：所有 Python 入口强制 UTF-8（`sys.stdout.reconfigure`），PowerShell 需 `chcp 65001`
-- **uv tool run 在 Windows 首次极慢**：lint 改用本地 venv 里的 ruff
+- **github.com:443 间歇性不可达**：已加 TCP 探测 + API 兜底（`src/net.py` / `src/fetch_api.py`）；
+  `git push` 失败时用 `scripts/push_via_api.py`，见 [决策记录](.agents/notes/2026-11-05-push-via-github-api.md)
+- **GitHub 匿名 API 限流 60 次/小时**：一次分析要 6-14 次请求。必须配 `GITHUB_TOKEN`
+  （5000 次/小时），否则第 5 个用户就撞墙。错误已正确分类为 `rate_limited` 而非 `not_found`
+- **Windows GBK 控制台**：所有 Python 入口强制 UTF-8（`sys.stdout.reconfigure`），
+  PowerShell 需 `[Console]::OutputEncoding = [Text.Encoding]::UTF8`
+- **`requests` 的 timeout 只是读空闲超时**：缓慢滴流的服务端会绕过它。LLM 调用额外包了
+  线程 + `future.result` 硬墙（`src/narrative.py`）
+- **同一个人多个 email 会被算成多个贡献者**：`dsh-cpa-switch` 里 `zlZayn` 与 `cslkkl`
+  是同一人的两个邮箱，导致 bus factor 被判 2 而非 1。SPEC 要求按 email 去重，
+  这是规格与现实的偏差，暂按 SPEC 执行
 
 ## 文档地图
 
 - 架构设计 → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - 模块契约 → [docs/CONTRACT.md](docs/CONTRACT.md)
+- 源码模块手册 → [src/README.md](src/README.md)
+- 测试覆盖与运行 → [tests/README.md](tests/README.md)
+- 运维脚本 → [scripts/README.md](scripts/README.md)
 - 决策与依据 → [.agents/notes/](.agents/notes/)
 - 提交材料 → [docs/DEVPOST.md](docs/DEVPOST.md)
 - 演示脚本 → [docs/DEMO.md](docs/DEMO.md)
 - 实现规格 → [docs/SPEC.md](docs/SPEC.md)（唯一事实来源）
+- 验收结果 → [docs/verification.json](docs/verification.json)

@@ -347,9 +347,8 @@ app.py（Streamlit 界面）
 
 ## 界面截图
 
-![主界面](docs/screenshots/main.png)
-
-*(截图位于 `docs/screenshots/`，若图片未显示说明本地尚未放置。)*
+> **界面截图待补**：截图将放在 `docs/screenshots/main.png`。
+> 在补上之前，可以本地运行 `streamlit run app.py` 直接看到界面。
 
 ---
 
