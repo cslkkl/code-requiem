@@ -1,0 +1,35 @@
+{
+  "kornia": {
+    "ok": true,
+    "score": 85,
+    "mode": "alive",
+    "bus_factor": 4,
+    "commits": 300,
+    "birth": "2018-08-22",
+    "lifespan": "8 年 3 个月",
+    "fingerprint": "feec93599abd90c3",
+    "elapsed": 26.45
+  },
+  "code-requiem": {
+    "ok": true,
+    "score": 54,
+    "mode": "critical",
+    "bus_factor": 1,
+    "commits": 8,
+    "birth": "2026-11-04",
+    "lifespan": "0 天",
+    "fingerprint": "df0272557da520ab",
+    "elapsed": 13.64
+  },
+  "v2ex-gae": {
+    "ok": true,
+    "score": 24,
+    "mode": "dead",
+    "bus_factor": 2,
+    "commits": 300,
+    "birth": "2010-07-16",
+    "lifespan": "7 年 4 个月",
+    "fingerprint": "75b89d3756f688e3",
+    "elapsed": 18.88
+  }
+}
