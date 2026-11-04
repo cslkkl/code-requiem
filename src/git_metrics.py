@@ -227,6 +227,36 @@ def human_age(days: int) -> str:
     return f"{years} 年 {rem_months} 个月"
 
 
+# ── 机器人账号识别 ──────────────────────────────────────────────────────────
+# SPEC 3.2 只说「按 commit author email 去重」，没说机器人算不算人。
+# 但 bus factor 的业务含义是「需要走掉几个**人**，项目就没人管了」——
+# 机器人不会离职，把它算进分母会虚高 bus factor、掩盖真实单点风险。
+# 所以这里排除机器人（更贴合 bus factor 的本意，属于对 SPEC 的合理细化）。
+_BOT_EMAIL_RE = re.compile(
+    r"(bot@|@bots?\.|\[bot\]|^(bot|dependabot|renovate|github-actions|actions|"
+    r"pre-commit-ci|mergify|semantic-release|greenkeeper|snyk-bot|imgbot))",
+    re.IGNORECASE,
+)
+_BOT_NAME_RE = re.compile(
+    r"(bot$|\[bot\]|dependabot|renovate|github-actions|actions-user|pre-commit-ci|"
+    r"mergify|semantic-release|snyk|imgbot|codecov)",
+    re.IGNORECASE,
+)
+
+
+def is_bot(name: str, email: str) -> bool:
+    """判断一个提交者是否机器人账号。"""
+    em = (email or "").strip().lower()
+    nm = (name or "").strip()
+    if not em and not nm:
+        return False
+    if "[bot]" in em or em.endswith("@users.noreply.github.com") and "[bot]" in nm.lower():
+        return True
+    if _BOT_EMAIL_RE.search(em):
+        return True
+    return bool(_BOT_NAME_RE.search(nm))
+
+
 def collect_commits(repo_path: str, *, now: datetime, max_commits: int = MAX_COMMITS_ANALYZED) -> dict:
     """从 git log 采集提交层面的全部指标。"""
     # 用 NUL 分隔字段、RS 分隔记录，避免提交信息里的特殊字符破坏解析
@@ -280,8 +310,14 @@ def collect_commits(repo_path: str, *, now: datetime, max_commits: int = MAX_COM
 
     author_counts: dict[str, int] = {}
     author_names: dict[str, str] = {}
+    bot_counts: dict[str, int] = {}
+    bot_commits = 0
     for c in commits:
         key = c["email"] or c["author"] or "unknown"
+        if is_bot(c["author"], c["email"]):
+            bot_counts[key] = bot_counts.get(key, 0) + 1
+            bot_commits += 1
+            continue
         author_counts[key] = author_counts.get(key, 0) + 1
         # 记录该 email 最近一次使用的 name
         author_names.setdefault(key, c["author"])
@@ -312,6 +348,8 @@ def collect_commits(repo_path: str, *, now: datetime, max_commits: int = MAX_COM
         "last": last,
         "author_counts": author_counts,
         "author_names": author_names,
+        "bot_commits": bot_commits,
+        "bot_accounts": len(bot_counts),
         "recent_6m": recent_6m,
         "previous_6m": previous_6m,
         "insufficient_history": insufficient,

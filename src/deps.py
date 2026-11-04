@@ -76,6 +76,20 @@ _UA = {"User-Agent": "code-requiem/1.0 (dependency health check)"}
 REQ_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._\-]*)\s*(\[[^\]]*\])?\s*(.*)$")
 
 
+# requirements.txt 里常见的开发/文档/测试工具名。
+# 只在 requirements*.txt 这种无 scope 标注的清单里用作推断依据。
+_DEV_TOOL_RE = re.compile(
+    r"^(pytest|_pytest|pytest-.*|coverage|covdefaults|sphinx.*|pydata-sphinx-theme|"
+    r"mkdocs.*|mkdocstrings.*|ruff|black|flake8|isort|pylint|mypy|pyright|pre-commit|"
+    r"tox|nox|build|twine|wheel|setuptools|bump2version|bumpversion|"
+    r"ipython|ipykernel|notebook|jupyter.*|nbconvert|"
+    r"myst-parser|docutils|furo|sphinxcontrib-.*|"
+    r"types-.*|mypy-.*|typeshed.*|"
+    r"codespell|interrogate|vulture|radon|xenon)$",
+    re.IGNORECASE,
+)
+
+
 def _parse_requirements(text: str) -> list[dict]:
     deps = []
     for raw in text.splitlines():
@@ -95,12 +109,18 @@ def _parse_requirements(text: str) -> list[dict]:
             version = vm.group(1)
         if name.lower() in ("python", "pip", "setuptools", "wheel"):
             continue
-        deps.append({"name": name, "version": version})
+        scope = "dev" if _DEV_TOOL_RE.match(name) else "runtime"
+        deps.append({"name": name, "version": version, "scope": scope})
     return deps
 
 
 def _parse_pyproject(text: str) -> list[dict]:
-    """不引入 tomllib 之外的依赖；Python 3.11+ 有 tomllib，3.10 用正则兜底。"""
+    """不引入 tomllib 之外的依赖；Python 3.11+ 有 tomllib，3.10 用正则兜底。
+
+    每项带 scope：runtime（运行时必需）或 dev（开发/文档/测试工具）。
+    为什么区分：文档构建工具停更 5 年，和运行时框架停更 5 年，对「接手风险」
+    的意义完全不同。SPEC 只要求「取最老的那个」来打分，但解释时必须说清是哪一类。
+    """
     deps: list[dict] = []
     try:
         import tomllib  # type: ignore
@@ -110,19 +130,32 @@ def _parse_pyproject(text: str) -> list[dict]:
         for item in project.get("dependencies", []) or []:
             m = REQ_RE.match(str(item))
             if m:
-                deps.append({"name": m.group(1), "version": ""})
+                deps.append({"name": m.group(1), "version": "", "scope": "runtime"})
         optional = project.get("optional-dependencies", {}) or {}
         for _group, items in optional.items():
             for item in items or []:
                 m = REQ_RE.match(str(item))
                 if m:
-                    deps.append({"name": m.group(1), "version": ""})
+                    deps.append({"name": m.group(1), "version": "", "scope": "dev"})
+        # PEP 735 dependency-groups（现代项目把 dev 依赖放这里）
+        groups = data.get("dependency-groups", {}) or {}
+        for _gname, items in groups.items():
+            for item in items or []:
+                if isinstance(item, dict):
+                    continue
+                m = REQ_RE.match(str(item))
+                if m:
+                    deps.append({"name": m.group(1), "version": "", "scope": "dev"})
         poetry = (data.get("tool", {}) or {}).get("poetry", {}) or {}
         for name, spec in (poetry.get("dependencies", {}) or {}).items():
             if name.lower() == "python":
                 continue
             ver = spec if isinstance(spec, str) else (spec or {}).get("version", "")
-            deps.append({"name": name, "version": str(ver).lstrip("^~=")})
+            deps.append({"name": name, "version": str(ver).lstrip("^~="), "scope": "runtime"})
+        for _grp, group in (poetry.get("group", {}) or {}).items():
+            for name, spec in (group.get("dependencies", {}) or {}).items():
+                ver = spec if isinstance(spec, str) else (spec or {}).get("version", "")
+                deps.append({"name": name, "version": str(ver).lstrip("^~="), "scope": "dev"})
     except Exception:
         deps = []
     if not deps:
@@ -130,7 +163,7 @@ def _parse_pyproject(text: str) -> list[dict]:
         m = re.search(r"dependencies\s*=\s*\[(.*?)\]", text, re.S)
         if m:
             for name in re.findall(r"[\"']([A-Za-z0-9][A-Za-z0-9._\-]*)", m.group(1)):
-                deps.append({"name": name, "version": ""})
+                deps.append({"name": name, "version": "", "scope": "runtime"})
     return deps
 
 
@@ -140,11 +173,15 @@ def _parse_package_json(text: str) -> list[dict]:
     except Exception:
         return []
     deps = []
-    for key in ("dependencies", "devDependencies", "peerDependencies"):
+    for key, scope in (
+        ("dependencies", "runtime"),
+        ("peerDependencies", "runtime"),
+        ("devDependencies", "dev"),
+    ):
         for name, ver in (data.get(key) or {}).items():
             if name.startswith("@types/"):
                 continue
-            deps.append({"name": name, "version": str(ver).lstrip("^~>=<")})
+            deps.append({"name": name, "version": str(ver).lstrip("^~>=<"), "scope": scope})
     return deps
 
 
@@ -351,7 +388,14 @@ def analyze_deps(repo_path: str) -> dict:
                 if days is None:
                     failures += 1
                     continue
-                items.append({"name": d["name"], "version": d.get("version", ""), "days": days})
+                items.append(
+                    {
+                        "name": d["name"],
+                        "version": d.get("version", ""),
+                        "days": days,
+                        "scope": d.get("scope", "runtime"),
+                    }
+                )
     except concurrent.futures.TimeoutError:
         return {
             "status": "timeout",
@@ -401,12 +445,20 @@ def analyze_deps(repo_path: str) -> dict:
         }
 
     oldest = max(items, key=lambda x: (x["days"], x["name"]))
+    # 运行时依赖里最老的那个：解释层用它来判断「这条扣分是否真的影响运行」
+    runtime_items = [i for i in items if i.get("scope") == "runtime"]
+    oldest_runtime = max(runtime_items, key=lambda x: (x["days"], x["name"])) if runtime_items else None
     return {
         "status": "ok",
         "ecosystem": eco,
         "count": len(deps),
         "oldest_pkg": oldest["name"],
         "oldest_days": int(oldest["days"]),
+        "oldest_scope": oldest.get("scope", "runtime"),
+        "oldest_runtime_pkg": oldest_runtime["name"] if oldest_runtime else None,
+        "oldest_runtime_days": int(oldest_runtime["days"]) if oldest_runtime else None,
+        "runtime_count": len(runtime_items),
+        "dev_count": len([i for i in items if i.get("scope") == "dev"]),
         "items": sorted(items, key=lambda x: (-x["days"], x["name"]))[:15],
         "file": manifest["file"],
     }
