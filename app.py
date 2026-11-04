@@ -92,19 +92,19 @@ EXAMPLES = [
         "tag": "存活样本",
         "label": "kornia/kornia",
         "url": "https://github.com/kornia/kornia",
-        "note": "12k★ 计算机视觉库 · 仍在高频提交",
+        "note": "12k★ 视觉库 · 56 位贡献者 · 85 分",
     },
     {
         "tag": "承压样本",
-        "label": "Textualize/trogon",
-        "url": "https://github.com/Textualize/trogon",
-        "note": "17 位贡献者 · 热度已过峰值",
+        "label": "cslkkl/code-requiem",
+        "url": "https://github.com/cslkkl/code-requiem",
+        "note": "就是本项目 · bus factor 1 · 54 分",
     },
     {
         "tag": "已故样本",
         "label": "livid/v2ex-gae",
         "url": "https://github.com/livid/v2ex-gae",
-        "note": "已归档 · 2017 年停更",
+        "note": "已归档 · 2017 年停更 · 24 分",
     },
 ]
 
@@ -187,12 +187,42 @@ DEMO_METRICS: dict = {
         "total": 58,
         "mode": "critical",
         "parts": {
-            "last_commit": {"score": 18, "max": 30, "label": "最后提交", "detail": "最后一次提交在 37 天前（≤90 天档）"},
-            "bus_factor": {"score": 10, "max": 25, "label": "bus factor", "detail": "前 2 名贡献者合计 69% 提交，第二人一旦离开即单点"},
-            "trend": {"score": 5, "max": 15, "label": "活跃趋势", "detail": "近 6 个月 64 次提交，之前 6 个月 141 次（0.45×），正在减速"},
-            "deps": {"score": 5, "max": 15, "label": "依赖健康", "detail": "最老依赖 legacy-soap-client 已 812 天未更新（365–729 档以上）"},
-            "issues": {"score": 6, "max": 10, "label": "Issue 响应", "detail": "已关闭 issue 中位响应 11 天（7–29 天档）"},
-            "docs": {"score": 3, "max": 5, "label": "文档完整度", "detail": "有 README 且有安装/用法说明，但没有可跑示例"},
+            "last_commit": {
+                "score": 18,
+                "max": 30,
+                "label": "最后提交",
+                "detail": "最后一次提交在 37 天前（≤90 天档）",
+            },
+            "bus_factor": {
+                "score": 10,
+                "max": 25,
+                "label": "bus factor",
+                "detail": "前 2 名贡献者合计 69% 提交，第二人一旦离开即单点",
+            },
+            "trend": {
+                "score": 5,
+                "max": 15,
+                "label": "活跃趋势",
+                "detail": "近 6 个月 64 次提交，之前 6 个月 141 次（0.45×），正在减速",
+            },
+            "deps": {
+                "score": 5,
+                "max": 15,
+                "label": "依赖健康",
+                "detail": "最老依赖 legacy-soap-client 已 812 天未更新（365–729 档以上）",
+            },
+            "issues": {
+                "score": 6,
+                "max": 10,
+                "label": "Issue 响应",
+                "detail": "已关闭 issue 中位响应 11 天（7–29 天档）",
+            },
+            "docs": {
+                "score": 3,
+                "max": 5,
+                "label": "文档完整度",
+                "detail": "有 README 且有安装/用法说明，但没有可跑示例",
+            },
         },
     },
     "elapsed_sec": 35.4,
@@ -610,7 +640,7 @@ def _legend_html() -> str:
             '<span class="req-legend__item">'
             f'<span class="req-legend__bar" style="background:{meta["tone"]}"></span>'
             f'{esc(meta["label"])} <span class="req-legend__range">{esc(meta["band"])}</span>'
-            f' · {esc(meta["doc"])}</span>'
+            f" · {esc(meta['doc'])}</span>"
         )
     return '<div class="req-legend">' + "".join(items) + "</div>"
 
@@ -775,7 +805,7 @@ def render_sidebar() -> None:
         st.markdown('<div class="req-side__tag">关于</div>', unsafe_allow_html=True)
         st.markdown(
             f'<div class="req-side__meta">分析层完全确定性，不含任何 AI 参与打分；'
-            f'AI 只负责把指标写成叙事。</div>'
+            f"AI 只负责把指标写成叙事。</div>"
             f'<div class="req-side__meta" style="margin-top:10px">'
             f'<a href="{GITHUB_URL}" target="_blank" rel="noopener">'
             f"github.com/cslkkl/code-requiem</a></div>",
@@ -814,8 +844,7 @@ def render_top_alerts(result: dict | None) -> None:
         st.markdown(
             notice(
                 "degraded",
-                f"<b>AI 叙事已降级</b> · {esc(reason)}。下方文档由结构化指标直接渲染，"
-                "数字与评分不受影响。",
+                f"<b>AI 叙事已降级</b> · {esc(reason)}。下方文档由结构化指标直接渲染，数字与评分不受影响。",
                 "warn",
             ),
             unsafe_allow_html=True,
@@ -833,9 +862,7 @@ def render_input() -> tuple[str, bool]:
                 label_visibility="collapsed",
             )
         with col_button:
-            submitted = st.form_submit_button(
-                "为其判读", type="primary", width="stretch"
-            )
+            submitted = st.form_submit_button("为其判读", type="primary", width="stretch")
     return (url or "").strip(), bool(submitted)
 
 
@@ -864,9 +891,7 @@ def _fallback_doc(metrics: dict) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def render_score_hero(
-    metrics: dict, narrative: dict, elapsed_total: float, *, cached: bool = False
-) -> None:
+def render_score_hero(metrics: dict, narrative: dict, elapsed_total: float, *, cached: bool = False) -> None:
     total = fmt.score_int(metrics)
     mode = str(fmt.safe_get(metrics, "score.mode") or fmt.mode_from_total(total))
     meta = fmt.mode_meta(mode)
@@ -933,7 +958,7 @@ def render_dims(metrics: dict) -> None:
             '<div class="req-dim__top">'
             f'<span class="req-dim__name">{esc(row["name"])}</span>'
             f'<span class="req-dim__score" style="color:{color}">'
-            f'{row["score"]} / {row["max"]}</span>'
+            f"{row['score']} / {row['max']}</span>"
             "</div>"
             '<div class="req-dim__track">'
             f'<div class="req-dim__fill" style="width:{width}%;background:{color}"></div>'
@@ -979,9 +1004,7 @@ def render_document(metrics: dict, narrative: dict) -> None:
     elapsed = fmt.elapsed_text((narrative or {}).get("elapsed_sec"))
     sections = (narrative or {}).get("sections") or {}
     section_count = (
-        len([k for k, v in sections.items() if str(v or "").strip()])
-        if isinstance(sections, dict)
-        else 0
+        len([k for k, v in sections.items() if str(v or "").strip()]) if isinstance(sections, dict) else 0
     )
 
     with st.container(border=True):
@@ -1035,7 +1058,7 @@ def render_forensics(metrics: dict, result: dict) -> None:
                     "<tr>"
                     f'<td class="dim">{esc(row["name"])}</td>'
                     f'<td class="num">{row["score"]} / {row["max"]}</td>'
-                    f'<td>{esc(row["detail"])}</td>'
+                    f"<td>{esc(row['detail'])}</td>"
                     "</tr>"
                 )
             body.append("</tbody></table>")
@@ -1053,7 +1076,8 @@ def render_forensics(metrics: dict, result: dict) -> None:
             st.markdown(
                 '<table class="req-table"><tbody>'
                 f'<tr><td class="dim">分析耗时</td><td class="num">{esc(fmt.elapsed_text(info.get("analyze")))}</td></tr>'
-                f'<tr><td class="dim">叙事耗时</td><td class="num">{esc(fmt.elapsed_text(info.get("narrative")))}</td></tr>'                f'<tr><td class="dim">确定性指纹</td><td>{esc(fmt.safe_get(metrics, "deterministic_key", "—"))}</td></tr>'
+                f'<tr><td class="dim">叙事耗时</td><td class="num">{esc(fmt.elapsed_text(info.get("narrative")))}</td></tr>'
+                f'<tr><td class="dim">确定性指纹</td><td>{esc(fmt.safe_get(metrics, "deterministic_key", "—"))}</td></tr>'
                 f'<tr><td class="dim">分析层耗时</td><td class="num">{esc(fmt.elapsed_text(fmt.safe_get(metrics, "elapsed_sec")))}</td></tr>'
                 "</tbody></table>",
                 unsafe_allow_html=True,
@@ -1076,7 +1100,7 @@ def render_error(error: dict) -> None:
     st.markdown(
         notice(
             panel["kind"],
-            f'<b>{esc(panel["title"])}</b><br>{esc(panel["detail"])}',
+            f"<b>{esc(panel['title'])}</b><br>{esc(panel['detail'])}",
             "error",
         ),
         unsafe_allow_html=True,
@@ -1212,10 +1236,9 @@ def narrative_phase(metrics: dict, *, forced: bool = False) -> tuple[dict, float
             )
             return (narrative if isinstance(narrative, dict) else {}), elapsed, False
         except Exception as exc:  # noqa: BLE001 —— 叙事失败不影响指标展示
-            status.update(
-                label="叙事生成失败，已降级为结构化指标", state="error", expanded=False
-            )
+            status.update(label="叙事生成失败，已降级为结构化指标", state="error", expanded=False)
             return _degraded_narrative(f"{type(exc).__name__}: {exc}", metrics), 0.0, False
+
 
 def render_result_head(metrics: dict, narrative: dict, timings: dict, *, cached: bool = False) -> None:
     """结果页上半部分：总分 + 六维 + 关键指标。指标一落地就能画。"""
@@ -1298,8 +1321,7 @@ def main() -> None:
         st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
         render_result_head(metrics, {}, timings)
         st.markdown(
-            '<div class="req-hint" style="margin:-2px 0 0 2px">'
-            "数字是最终结果。下面是叙事文档，正在写…</div>",
+            '<div class="req-hint" style="margin:-2px 0 0 2px">数字是最终结果。下面是叙事文档，正在写…</div>',
             unsafe_allow_html=True,
         )
 
@@ -1330,8 +1352,7 @@ def main() -> None:
         st.markdown(
             notice(
                 "preview",
-                "<b>界面预览</b> · 下面是演示数据，只用来检查排版；"
-                "真实分析需要 src/analyzer.py 就绪。",
+                "<b>界面预览</b> · 下面是演示数据，只用来检查排版；真实分析需要 src/analyzer.py 就绪。",
                 "ghost",
             ),
             unsafe_allow_html=True,
@@ -1364,9 +1385,7 @@ def main() -> None:
             '<div class="req-empty__detail">'
             "在上面贴一个公开仓库地址，或从左侧挑一个样本。<br>"
             "一次检查大约 10–60 秒：接入 → 采集指标 → 生成叙事。"
-            "</div>"
-            + _legend_html()
-            + "</div>",
+            "</div>" + _legend_html() + "</div>",
             unsafe_allow_html=True,
         )
 
@@ -1374,8 +1393,8 @@ def main() -> None:
         metrics = result["metrics"]
         st.markdown(
             '<div class="req-hero__foot" style="margin-top:26px;justify-content:center">'
-            f'<span>{esc(fmt.repo_url(metrics))}</span><i>·</i>'
-            '<span>分析层确定性 · 无 LLM 参与打分</span>'
+            f"<span>{esc(fmt.repo_url(metrics))}</span><i>·</i>"
+            "<span>分析层确定性 · 无 LLM 参与打分</span>"
             "</div>",
             unsafe_allow_html=True,
         )

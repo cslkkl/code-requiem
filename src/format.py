@@ -401,7 +401,7 @@ def key_metrics(metrics: dict) -> list[dict]:
 
     readme_chars = _int(safe_get(metrics, "docs.readme_chars"))
     has_readme = bool(safe_get(metrics, "docs.has_readme", False))
-    doc_part = (safe_get(metrics, "score.parts.docs", {}) or {})
+    doc_part = safe_get(metrics, "score.parts.docs", {}) or {}
     doc_score = _int(doc_part.get("score")) if isinstance(doc_part, dict) else None
     doc_max = _int(doc_part.get("max")) if isinstance(doc_part, dict) else None
 
@@ -412,11 +412,7 @@ def key_metrics(metrics: dict) -> list[dict]:
         {
             "label": "BUS FACTOR",
             "value": _DASH if bf is None else f"{bf}",
-            "sub": (
-                f"前 {bf} 人承担 ≥60% 提交"
-                if bf not in (None, 0)
-                else "无法计算（提交数为 0）"
-            ),
+            "sub": (f"前 {bf} 人承担 ≥60% 提交" if bf not in (None, 0) else "无法计算（提交数为 0）"),
             "help": "把贡献者按提交数排序，累计到 60% 时需要几个人。等于 1 就是单点。",
         }
     )
@@ -428,9 +424,7 @@ def key_metrics(metrics: dict) -> list[dict]:
     elif days_int is not None and days_int == 1:
         last_value, last_sub = "昨天", "1 天"
     else:
-        last_value, last_sub = human_days(days_last), (
-            _DASH if days_int is None else f"{days_int} 天"
-        )
+        last_value, last_sub = human_days(days_last), (_DASH if days_int is None else f"{days_int} 天")
     cards.append(
         {
             "label": "最后提交距今",
@@ -445,11 +439,7 @@ def key_metrics(metrics: dict) -> list[dict]:
         {
             "label": "作者数",
             "value": _DASH if total_authors is None else f"{total_authors} 人",
-            "sub": (
-                f"主导者占 {top_share * 100:.0f}%"
-                if top_share >= 0
-                else "无作者信息"
-            ),
+            "sub": (f"主导者占 {top_share * 100:.0f}%" if top_share >= 0 else "无作者信息"),
             "help": "按 commit author email 去重，同一个人多个名字算一个人。",
         }
     )
@@ -470,8 +460,7 @@ def key_metrics(metrics: dict) -> list[dict]:
             "label": "代码行数",
             "value": fmt_count(loc),
             "sub": (
-                f"{fmt_int(files)} 文件"
-                + (f" / {modules} 模块" if modules else "")
+                f"{fmt_int(files)} 文件" + (f" / {modules} 模块" if modules else "")
                 if files is not None
                 else _DASH
             ),
@@ -570,11 +559,7 @@ def verdict(metrics: dict) -> str:
         risk = _worst_dim(metrics)
         tail = f"短板是 {risk[0]}（{risk[1]}/{risk[2]}）"
         if bf == 1:
-            who = (
-                f"（{top_name} 一人写下 {share * 100:.0f}% 的提交）"
-                if top_name and share >= 0
-                else ""
-            )
+            who = f"（{top_name} 一人写下 {share * 100:.0f}% 的提交）" if top_name and share >= 0 else ""
             return f"{when_phrase}，bus factor = 1{who}，{tail}——还有人愿意接手，现在就是最后窗口。"
         return f"{when_phrase}，{tail}——体征还在，但已经不允许再放两年不管。"
 
@@ -631,8 +616,7 @@ def llm_badge(info: dict | None) -> dict:
             "online": True,
             "text": text,
             "tone": "#7FA98C",
-            "detail": f"来源 {source or '未知'}"
-            + (f" · {endpoint}" if endpoint else ""),
+            "detail": f"来源 {source or '未知'}" + (f" · {endpoint}" if endpoint else ""),
         }
     return {
         "online": False,
