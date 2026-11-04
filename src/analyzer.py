@@ -107,8 +107,14 @@ def parse_repo_input(raw: str) -> dict:
         name = m.group(2)
         if name.endswith(".git"):
             name = name[:-4]
-        info.update({"host": "github", "owner": m.group(1), "name": name,
-                     "url": f"https://github.com/{m.group(1)}/{name}.git"})
+        info.update(
+            {
+                "host": "github",
+                "owner": m.group(1),
+                "name": name,
+                "url": f"https://github.com/{m.group(1)}/{name}.git",
+            }
+        )
         return info
 
     m = _GITLAB_RE.search(text)
@@ -116,8 +122,14 @@ def parse_repo_input(raw: str) -> dict:
         name = m.group(2)
         if name.endswith(".git"):
             name = name[:-4]
-        info.update({"host": "gitlab", "owner": m.group(1), "name": name,
-                     "url": f"https://gitlab.com/{m.group(1)}/{name}.git"})
+        info.update(
+            {
+                "host": "gitlab",
+                "owner": m.group(1),
+                "name": name,
+                "url": f"https://gitlab.com/{m.group(1)}/{name}.git",
+            }
+        )
         return info
 
     m = _SSH_RE.match(text)
@@ -133,8 +145,9 @@ def parse_repo_input(raw: str) -> dict:
     # owner/repo 简写
     if re.fullmatch(r"[A-Za-z0-9._\-]+/[A-Za-z0-9._\-]+", text):
         owner, name = text.split("/")
-        info.update({"host": "github", "owner": owner, "name": name,
-                     "url": f"https://github.com/{owner}/{name}.git"})
+        info.update(
+            {"host": "github", "owner": owner, "name": name, "url": f"https://github.com/{owner}/{name}.git"}
+        )
         return info
 
     # 其它 https 地址
@@ -143,7 +156,11 @@ def parse_repo_input(raw: str) -> dict:
         parts = [x for x in parsed.path.split("/") if x]
         if len(parts) >= 2:
             name = parts[1].removesuffix(".git")
-            h = "github" if "github" in parsed.netloc else ("gitlab" if "gitlab" in parsed.netloc else "other")
+            h = (
+                "github"
+                if "github" in parsed.netloc
+                else ("gitlab" if "gitlab" in parsed.netloc else "other")
+            )
             info.update({"host": h, "owner": parts[0], "name": name, "url": text})
             return info
         info["host"] = "invalid"
@@ -162,18 +179,35 @@ def _empty_result(repo: dict, error: dict, elapsed: float = 0.0) -> dict:
         "sampled": False,
         "sample_note": None,
         "life": {
-            "first_commit": "", "last_commit": "", "last_commit_msg": "",
-            "total_commits": 0, "age_days": 0, "span_days": 0,
-            "days_since_last_commit": 0, "age_text": "",
+            "first_commit": "",
+            "last_commit": "",
+            "last_commit_msg": "",
+            "total_commits": 0,
+            "age_days": 0,
+            "span_days": 0,
+            "days_since_last_commit": 0,
+            "age_text": "",
         },
         "size": {"tracked_files": 0, "loc": 0, "modules": 0, "top_dirs": [], "languages": []},
         "authors": {"total": 0, "bus_factor": 0, "top": []},
         "trend": {"recent_6m": 0, "previous_6m": 0, "ratio": 0.0, "insufficient_history": True},
-        "deps": {"status": "none", "ecosystem": "none", "count": 0,
-                 "oldest_pkg": None, "oldest_days": None, "items": []},
+        "deps": {
+            "status": "none",
+            "ecosystem": "none",
+            "count": 0,
+            "oldest_pkg": None,
+            "oldest_days": None,
+            "items": [],
+        },
         "issues": {"status": "unavailable", "closed_count": 0, "open_count": 0, "median_days": None},
-        "docs": {"has_readme": False, "readme_path": None, "readme_chars": 0,
-                 "has_install": False, "has_usage": False, "has_example": False},
+        "docs": {
+            "has_readme": False,
+            "readme_path": None,
+            "readme_chars": 0,
+            "has_install": False,
+            "has_usage": False,
+            "has_example": False,
+        },
         "risks": {"todo_count": 0, "fixme_count": 0, "stale_core_files": [], "hotspots": []},
         "score": {"total": 0, "mode": "dead", "parts": {}},
         "elapsed_sec": round(elapsed, 2),
@@ -181,8 +215,7 @@ def _empty_result(repo: dict, error: dict, elapsed: float = 0.0) -> dict:
     }
 
 
-def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = None,
-                 progress=None) -> dict:
+def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = None, progress=None) -> dict:
     """分析任意公开 Git 仓库，返回 CONTRACT.md 第 2 节定义的结构。
 
     progress: 可选回调 progress(stage: str)，用于界面显示进度。
@@ -211,8 +244,9 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
         if repo["is_local"]:
             repo_path = repo["url"]
             if not (Path(repo_path) / ".git").exists():
-                return _empty_result(repo, _err("invalid", "该本地目录不是 Git 仓库"),
-                                     time.perf_counter() - t0)
+                return _empty_result(
+                    repo, _err("invalid", "该本地目录不是 Git 仓库"), time.perf_counter() - t0
+                )
         else:
             # 先探测 github.com:443。本机实测：api.github.com 通、github.com 不通，
             # 盲目 clone 会白等 42 秒（2 次 × 21 秒）。探测失败就直接走 API 兜底。
@@ -230,8 +264,7 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
                         _p("克隆失败，改用 GitHub API 采集…")
                         need_api_fallback = True
                     else:
-                        return _empty_result(repo, _err(exc.kind, exc.message),
-                                             time.perf_counter() - t0)
+                        return _empty_result(repo, _err(exc.kind, exc.message), time.perf_counter() - t0)
 
             if need_api_fallback:
                 data_source = "github-api"
@@ -240,7 +273,11 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
 
         if data_source == "github-api":
             return _analyze_via_api(
-                repo=repo, now=now, workdir=workdir, t0=t0, progress=_p,
+                repo=repo,
+                now=now,
+                workdir=workdir,
+                t0=t0,
+                progress=_p,
             )
 
         if gm.is_empty_repo(repo_path):
@@ -271,12 +308,12 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
             total = github_api.commit_count(repo["owner"], repo["name"])
             if total:
                 hist["total_commits"] = total
-            recent = github_api.commit_count(
-                repo["owner"], repo["name"], since=now - timedelta(days=182)
-            )
+            recent = github_api.commit_count(repo["owner"], repo["name"], since=now - timedelta(days=182))
             prev = github_api.commit_count(
-                repo["owner"], repo["name"],
-                since=now - timedelta(days=364), until=now - timedelta(days=182),
+                repo["owner"],
+                repo["name"],
+                since=now - timedelta(days=364),
+                until=now - timedelta(days=182),
             )
             if recent is not None and prev is not None:
                 hist["recent_6m"] = recent
@@ -297,8 +334,10 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
 
         if size_mb > gm.MAX_REPO_MB or hist["total_commits"] > 50000:
             sampled = True
-            sample_note = (f"仓库较大（{size_mb:.0f} MB / {hist['total_commits']} 次提交），"
-                           f"已采样最近 {hist['analyzed_commits']} 个 commit 进行分析")
+            sample_note = (
+                f"仓库较大（{size_mb:.0f} MB / {hist['total_commits']} 次提交），"
+                f"已采样最近 {hist['analyzed_commits']} 个 commit 进行分析"
+            )
         elif hist.get("truncated"):
             sampled = True
             sample_note = f"已采样最近 {hist['analyzed_commits']} 个 commit（总提交 {hist['total_commits']}）"
@@ -317,14 +356,22 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
         if repo["host"] == "github":
             issues_info = issues_mod.analyze_issues(repo["owner"], repo["name"], host="github")
         else:
-            issues_info = {"status": "not_github", "closed_count": 0, "open_count": 0,
-                           "median_days": None}
+            issues_info = {"status": "not_github", "closed_count": 0, "open_count": 0, "median_days": None}
 
         _p("正在计算健康分…")
         metrics = _build_metrics(
-            repo=repo, now=now, hist=hist, size=size, docs_info=docs_info,
-            risks_raw=risks_raw, stale=stale, deps_info=deps_info, issues_info=issues_info,
-            sampled=sampled, sample_note=sample_note, repo_path=repo_path,
+            repo=repo,
+            now=now,
+            hist=hist,
+            size=size,
+            docs_info=docs_info,
+            risks_raw=risks_raw,
+            stale=stale,
+            deps_info=deps_info,
+            issues_info=issues_info,
+            sampled=sampled,
+            sample_note=sample_note,
+            repo_path=repo_path,
             elapsed=time.perf_counter() - t0,
         )
         return metrics
@@ -358,8 +405,13 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
             commits = fetch_api.fetch_commits(owner, name)
             if commits:
                 # 用 commits 里的最早时间作为 birth
-                meta = {"created_at": None, "pushed_at": None, "archived": False,
-                        "default_branch": "main", "size_kb": 0}
+                meta = {
+                    "created_at": None,
+                    "pushed_at": None,
+                    "archived": False,
+                    "default_branch": "main",
+                    "size_kb": 0,
+                }
             else:
                 return _empty_result(
                     repo,
@@ -435,6 +487,7 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
     if meta.get("created_at"):
         try:
             from datetime import datetime as _dt
+
             birth = _dt.fromisoformat(meta["created_at"].replace("Z", "+00:00"))
         except Exception:
             birth = None
@@ -455,12 +508,22 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
 
     progress("正在计算健康分…")
     metrics = _build_metrics(
-        repo=repo, now=now, hist=hist, size=size, docs_info=docs_info,
-        risks_raw=risks_raw, stale=stale, deps_info=deps_info, issues_info=issues_info,
+        repo=repo,
+        now=now,
+        hist=hist,
+        size=size,
+        docs_info=docs_info,
+        risks_raw=risks_raw,
+        stale=stale,
+        deps_info=deps_info,
+        issues_info=issues_info,
         sampled=True,
-        sample_note=("当前网络无法直连 github.com，已改用 GitHub REST API + tarball 采集快照；"
-                     f"提交历史取最近 {len(commits)} 条"),
-        repo_path=root, elapsed=time.perf_counter() - t0,
+        sample_note=(
+            "当前网络无法直连 github.com，已改用 GitHub REST API + tarball 采集快照；"
+            f"提交历史取最近 {len(commits)} 条"
+        ),
+        repo_path=root,
+        elapsed=time.perf_counter() - t0,
     )
     metrics["data_source"] = "github-api"
     metrics["repo_meta"] = meta
@@ -504,16 +567,32 @@ def _scan_dir(root: str) -> dict:
         "tracked_files": len(tracked),
         "loc": loc,
         "modules": len(code_files),
-        "top_dirs": sorted([{"name": k, "files": v} for k, v in top_dirs.items()],
-                           key=lambda x: (-x["files"], x["name"]))[:10],
-        "languages": sorted([{"name": k, "files": v} for k, v in languages.items()],
-                            key=lambda x: (-x["files"], x["name"]))[:6],
+        "top_dirs": sorted(
+            [{"name": k, "files": v} for k, v in top_dirs.items()], key=lambda x: (-x["files"], x["name"])
+        )[:10],
+        "languages": sorted(
+            [{"name": k, "files": v} for k, v in languages.items()], key=lambda x: (-x["files"], x["name"])
+        )[:6],
         "code_files": code_files,
     }
 
 
-def _build_metrics(*, repo, now, hist, size, docs_info, risks_raw, stale,
-                   deps_info, issues_info, sampled, sample_note, repo_path, elapsed) -> dict:
+def _build_metrics(
+    *,
+    repo,
+    now,
+    hist,
+    size,
+    docs_info,
+    risks_raw,
+    stale,
+    deps_info,
+    issues_info,
+    sampled,
+    sample_note,
+    repo_path,
+    elapsed,
+) -> dict:
     """把采集到的原始数据组装成契约结构，并逐维打分。"""
     last = hist["last"]
     first = hist["first"]
@@ -533,20 +612,22 @@ def _build_metrics(*, repo, now, hist, size, docs_info, risks_raw, stale,
 
     # ── 维度 3：趋势 ──────────────────────────────────────────────────────
     insufficient = hist["insufficient_history"] or len(hist["commits"]) <= 1
-    s_trend, d_trend, ratio = scoring.score_trend(
-        hist["recent_6m"], hist["previous_6m"], insufficient
-    )
+    s_trend, d_trend, ratio = scoring.score_trend(hist["recent_6m"], hist["previous_6m"], insufficient)
 
     # ── 维度 4：依赖 ──────────────────────────────────────────────────────
     s_deps, d_deps = scoring.score_deps(deps_info.get("oldest_days"), deps_info.get("status", "none"))
 
     # ── 维度 5：issue ─────────────────────────────────────────────────────
-    s_iss, d_iss = scoring.score_issues(issues_info.get("median_days"), issues_info.get("status", "unavailable"))
+    s_iss, d_iss = scoring.score_issues(
+        issues_info.get("median_days"), issues_info.get("status", "unavailable")
+    )
 
     # ── 维度 6：文档 ──────────────────────────────────────────────────────
     s_doc, d_doc = scoring.score_docs(
-        docs_info["has_readme"], docs_info["readme_chars"],
-        docs_info["has_install"], docs_info["has_example"],
+        docs_info["has_readme"],
+        docs_info["readme_chars"],
+        docs_info["has_install"],
+        docs_info["has_example"],
     )
 
     total = s_last + s_bf + s_trend + s_deps + s_iss + s_doc
@@ -556,14 +637,15 @@ def _build_metrics(*, repo, now, hist, size, docs_info, risks_raw, stale,
     # ── 作者排行 ──────────────────────────────────────────────────────────
     total_commits = sum(hist["author_counts"].values()) or 1
     top_authors = []
-    for email, cnt in sorted(hist["author_counts"].items(),
-                             key=lambda kv: (-kv[1], kv[0]))[:8]:
-        top_authors.append({
-            "name": hist["author_names"].get(email, email),
-            "email": email,
-            "commits": cnt,
-            "share": round(cnt / total_commits, 4),
-        })
+    for email, cnt in sorted(hist["author_counts"].items(), key=lambda kv: (-kv[1], kv[0]))[:8]:
+        top_authors.append(
+            {
+                "name": hist["author_names"].get(email, email),
+                "email": email,
+                "commits": cnt,
+                "share": round(cnt / total_commits, 4),
+            }
+        )
 
     # ── 风险点：stale 文件 + TODO/FIXME ───────────────────────────────────
     hotspots = risks_raw["hits"][:20]
@@ -649,18 +731,27 @@ def _build_metrics(*, repo, now, hist, size, docs_info, risks_raw, stale,
             "total": total,
             "mode": mode,
             "parts": {
-                "last_commit": {"score": s_last, "max": scoring.LAST_COMMIT_MAX,
-                                "label": "最后提交距今", "detail": d_last},
-                "bus_factor": {"score": s_bf, "max": scoring.BUS_FACTOR_MAX,
-                               "label": "Bus Factor", "detail": d_bf},
-                "trend": {"score": s_trend, "max": scoring.TREND_MAX,
-                          "label": "提交活跃度趋势", "detail": d_trend},
-                "deps": {"score": s_deps, "max": scoring.DEPS_MAX,
-                         "label": "依赖健康度", "detail": d_deps},
-                "issues": {"score": s_iss, "max": scoring.ISSUES_MAX,
-                           "label": "Issue 响应", "detail": d_iss},
-                "docs": {"score": s_doc, "max": scoring.DOCS_MAX,
-                         "label": "文档完整度", "detail": d_doc},
+                "last_commit": {
+                    "score": s_last,
+                    "max": scoring.LAST_COMMIT_MAX,
+                    "label": "最后提交距今",
+                    "detail": d_last,
+                },
+                "bus_factor": {
+                    "score": s_bf,
+                    "max": scoring.BUS_FACTOR_MAX,
+                    "label": "Bus Factor",
+                    "detail": d_bf,
+                },
+                "trend": {
+                    "score": s_trend,
+                    "max": scoring.TREND_MAX,
+                    "label": "提交活跃度趋势",
+                    "detail": d_trend,
+                },
+                "deps": {"score": s_deps, "max": scoring.DEPS_MAX, "label": "依赖健康度", "detail": d_deps},
+                "issues": {"score": s_iss, "max": scoring.ISSUES_MAX, "label": "Issue 响应", "detail": d_iss},
+                "docs": {"score": s_doc, "max": scoring.DOCS_MAX, "label": "文档完整度", "detail": d_doc},
             },
         },
         "elapsed_sec": round(elapsed, 2),
@@ -672,6 +763,7 @@ def _build_metrics(*, repo, now, hist, size, docs_info, risks_raw, stale,
 def _fingerprint(m: dict) -> str:
     """确定性指纹：只由打分相关字段决定，便于验证「两次运行分数相同」。"""
     import hashlib
+
     basis = {
         "total": m["score"]["total"],
         "parts": {k: v["score"] for k, v in m["score"]["parts"].items()},
@@ -694,8 +786,10 @@ def _print_report(m: dict) -> None:
     s = m["score"]
     print("=" * 68)
     print(f"  仓库      {repo['owner']}/{repo['name']}  ({repo['host']})")
-    print(f"  健康分    {s['total']} / 100   → {scoring.MODE_LABELS[s['mode']]} · "
-          f"{scoring.MODE_OUTPUTS[s['mode']]}")
+    print(
+        f"  健康分    {s['total']} / 100   → {scoring.MODE_LABELS[s['mode']]} · "
+        f"{scoring.MODE_OUTPUTS[s['mode']]}"
+    )
     print("=" * 68)
     for _key, part in s["parts"].items():
         bar_len = int(round(part["score"] / part["max"] * 20)) if part["max"] else 0
@@ -703,21 +797,26 @@ def _print_report(m: dict) -> None:
         print(f"  {part['label']:<14} {bar} {part['score']:>2}/{part['max']:<2}  {part['detail']}")
     print("-" * 68)
     life = m["life"]
-    print(f"  首次提交   {life['first_commit'][:10]}   最后提交 {life['last_commit'][:10]}"
-          f"（{life['last_commit_age_text']}前）")
+    print(
+        f"  首次提交   {life['first_commit'][:10]}   最后提交 {life['last_commit'][:10]}"
+        f"（{life['last_commit_age_text']}前）"
+    )
     print(f"  提交总数   {life['total_commits']}   分析范围 {life.get('analyzed_commits')}")
-    print(f"  代码规模   {m['size']['tracked_files']} 文件 / {m['size']['loc']} 行 / "
-          f"{m['size']['modules']} 个代码文件")
+    print(
+        f"  代码规模   {m['size']['tracked_files']} 文件 / {m['size']['loc']} 行 / "
+        f"{m['size']['modules']} 个代码文件"
+    )
     print(f"  作者       {m['authors']['total']} 人   bus factor = {m['authors']['bus_factor']}")
     if m["authors"]["top"]:
         top = m["authors"]["top"][0]
-        print(f"  头号作者   {top['name']} <{top['email']}>  {top['commits']} 次 "
-              f"({top['share'] * 100:.1f}%)")
+        print(f"  头号作者   {top['name']} <{top['email']}>  {top['commits']} 次 ({top['share'] * 100:.1f}%)")
     tr = m["trend"]
     print(f"  趋势       近6月 {tr['recent_6m']} / 前6月 {tr['previous_6m']}  ratio={tr['ratio']}")
     dp = m["deps"]
-    print(f"  依赖       {dp['status']} / {dp['ecosystem']} / {dp['count']} 个"
-          + (f" / 最老 {dp['oldest_pkg']} {dp['oldest_days']} 天" if dp.get("oldest_pkg") else ""))
+    print(
+        f"  依赖       {dp['status']} / {dp['ecosystem']} / {dp['count']} 个"
+        + (f" / 最老 {dp['oldest_pkg']} {dp['oldest_days']} 天" if dp.get("oldest_pkg") else "")
+    )
     iss = m["issues"]
     print(f"  Issues     {iss['status']} / 已关闭 {iss['closed_count']} / 中位 {iss['median_days']} 天")
     print(f"  文档       README={m['docs']['has_readme']} ({m['docs']['readme_chars']} 字符)")

@@ -149,10 +149,7 @@ def _risk_lines(metrics: dict) -> list[str]:
         kind = _text(item.get("kind"), "TODO")
         text = _text(item.get("text"), "（无原文）").replace("\n", " ")[:80]
         if path in seen_paths:
-            lines.append(
-                "  - 同一文件内 %s:%d 处有 `%s`：%s"
-                % (path, _int(item.get("line")), kind, text)
-            )
+            lines.append("  - 同一文件内 %s:%d 处有 `%s`：%s" % (path, _int(item.get("line")), kind, text))
         else:
             lines.append(
                 "`%s` — 第 %d 行有 `%s`：%s。这是已知的坑，别当它是待办。"
@@ -170,8 +167,7 @@ def _risk_lines(metrics: dict) -> list[str]:
                 continue
             lines.append(
                 "`%s/` — 该目录承载 %d 个文件，是仓库主干之一；"
-                "没有文件级风险数据，先从这里的入口文件读起。"
-                % (name, _int(item.get("files")))
+                "没有文件级风险数据，先从这里的入口文件读起。" % (name, _int(item.get("files")))
             )
             seen_paths.add(name)
             if len(seen_paths) >= 3:
@@ -216,7 +212,11 @@ def _takeover_steps(metrics: dict) -> list[str]:
         first = hotspot_list[0] if isinstance(hotspot_list[0], dict) else {}
         steps.append(
             "处理 `%s:%d` 这条 `%s`：它是公认的坑，先加一条回归用例再改。"
-            % (_text(first.get("path"), "核心文件"), _int(first.get("line")), _text(first.get("kind"), "TODO"))
+            % (
+                _text(first.get("path"), "核心文件"),
+                _int(first.get("line")),
+                _text(first.get("kind"), "TODO"),
+            )
         )
     else:
         steps.append("从仓库入口文件（主模块 / CLI 入口）读起，画出实际的调用链再改。")
@@ -233,17 +233,11 @@ def _takeover_steps(metrics: dict) -> list[str]:
     elif not docs.get("has_install") or not docs.get("has_example"):
         steps.append(
             "补齐 README 缺失的部分：%s。别人照着它能不能在三分钟内跑起来，是唯一验收标准。"
-            % (
-                "安装/使用说明"
-                if not docs.get("has_install")
-                else "可直接复制的代码示例"
-            )
+            % ("安装/使用说明" if not docs.get("has_install") else "可直接复制的代码示例")
         )
 
     if bf <= 1:
-        steps.append(
-            "找一个第二维护者：bus factor = 1，你现在就是那个 1。至少让另一个人能独立发布一次版本。"
-        )
+        steps.append("找一个第二维护者：bus factor = 1，你现在就是那个 1。至少让另一个人能独立发布一次版本。")
     else:
         steps.append(
             "确认维护者分工：bus factor = %d，把发布权限和部署步骤写进仓库文档，别只存在人脑里。" % bf
@@ -297,16 +291,24 @@ def render_will_template(metrics: dict) -> str:
     # ── 一
     add(prompts.WILL_HEADINGS[0])
     add("")
-    add("- 代码规模：%d 个追踪文件、%d 行代码、%d 个模块"
-        % (_int(size.get("tracked_files")), _int(size.get("loc")), _int(size.get("modules"))))
+    add(
+        "- 代码规模：%d 个追踪文件、%d 行代码、%d 个模块"
+        % (_int(size.get("tracked_files")), _int(size.get("loc")), _int(size.get("modules")))
+    )
     add("- 主要语言：%s" % lang_text)
     add("- 主要目录：%s" % dir_text)
-    add("- 出生于 %s，最后一次提交是 %s（距今 %d 天）"
-        % (_short_date(life.get("first_commit")), _short_date(life.get("last_commit")),
-           _int(life.get("days_since_last_commit"))))
-    add("- 已有寿命：%s；本次分析范围内共 %d 次提交"
-        % (_text(life.get("age_text"), "%d 天" % _int(life.get("age_days"))),
-           _int(life.get("total_commits"))))
+    add(
+        "- 出生于 %s，最后一次提交是 %s（距今 %d 天）"
+        % (
+            _short_date(life.get("first_commit")),
+            _short_date(life.get("last_commit")),
+            _int(life.get("days_since_last_commit")),
+        )
+    )
+    add(
+        "- 已有寿命：%s；本次分析范围内共 %d 次提交"
+        % (_text(life.get("age_text"), "%d 天" % _int(life.get("age_days"))), _int(life.get("total_commits")))
+    )
     add("- 托管平台：%s；地址：%s" % (_text(repo.get("host"), "未知"), _text(repo.get("url"), "未知")))
     if metrics.get("sampled"):
         add("- 说明：%s" % _text(metrics.get("sample_note"), "仓库体量较大，已采样分析"))
@@ -317,9 +319,15 @@ def render_will_template(metrics: dict) -> str:
     add(prompts.WILL_HEADINGS[1])
     add("")
     add("- 贡献者总数：%d 人" % total_authors)
-    add("- 趋势：近 6 个月 %d 次提交，前 6 个月 %d 次提交（ratio %.2f）%s"
-        % (_int(trend.get("recent_6m")), _int(trend.get("previous_6m")), _float(trend.get("ratio")),
-           "；历史不足 12 个月，趋势参考价值有限" if trend.get("insufficient_history") else ""))
+    add(
+        "- 趋势：近 6 个月 %d 次提交，前 6 个月 %d 次提交（ratio %.2f）%s"
+        % (
+            _int(trend.get("recent_6m")),
+            _int(trend.get("previous_6m")),
+            _float(trend.get("ratio")),
+            "；历史不足 12 个月，趋势参考价值有限" if trend.get("insufficient_history") else "",
+        )
+    )
     add("")
     top = _as_list(authors.get("top"))
     if top:
@@ -328,20 +336,30 @@ def render_will_template(metrics: dict) -> str:
         for index, person in enumerate(top[:6], 1):
             if not isinstance(person, dict):
                 continue
-            add("| %d | %s | %d | %.1f%% |"
-                % (index, _text(person.get("name"), "匿名"),
-                   _int(person.get("commits")), _float(person.get("share")) * 100))
+            add(
+                "| %d | %s | %d | %.1f%% |"
+                % (
+                    index,
+                    _text(person.get("name"), "匿名"),
+                    _int(person.get("commits")),
+                    _float(person.get("share")) * 100,
+                )
+            )
         add("")
     if bf == 1:
         add("bus factor = 1。**%s**" % prompts.BUS_FACTOR_ONE_SENTENCE)
         add("")
-        add("这个数字的含义很直接：所有核心知识、发布权限、部署步骤都压在一个人身上，"
-            "没有任何冗余。这不是风险提示，是已经发生的事实。")
+        add(
+            "这个数字的含义很直接：所有核心知识、发布权限、部署步骤都压在一个人身上，"
+            "没有任何冗余。这不是风险提示，是已经发生的事实。"
+        )
     elif bf <= 0:
         add("bus factor 无法计算（没有有效提交者信息）。")
     else:
-        add("bus factor = %d：排名前 %d 的贡献者合计承担了 60%% 以上的提交。"
-            "关键人风险中等偏低，但上面这张表里每个人的离开都会带走一部分上下文。" % (bf, bf))
+        add(
+            "bus factor = %d：排名前 %d 的贡献者合计承担了 60%% 以上的提交。"
+            "关键人风险中等偏低，但上面这张表里每个人的离开都会带走一部分上下文。" % (bf, bf)
+        )
     add("")
 
     # ── 三
@@ -357,13 +375,20 @@ def render_will_template(metrics: dict) -> str:
                 counter += 1
                 add("%d. %s" % (counter, line))
     else:
-        add("本次分析未采集到文件级风险数据，只能给出目录级判断：%s。"
-            "接手时请先自己跑一遍 `git log --stat` 找长期无人改动的核心文件。" % dir_text)
+        add(
+            "本次分析未采集到文件级风险数据，只能给出目录级判断：%s。"
+            "接手时请先自己跑一遍 `git log --stat` 找长期无人改动的核心文件。" % dir_text
+        )
     add("")
-    add("补充信号：TODO %d 处、FIXME %d 处；最老依赖 %s（%s 天未更新）。"
-        % (_int(risks.get("todo_count")), _int(risks.get("fixme_count")),
-           _text(deps.get("oldest_pkg"), "无"),
-           "未知" if deps.get("oldest_days") is None else str(_int(deps.get("oldest_days")))))
+    add(
+        "补充信号：TODO %d 处、FIXME %d 处；最老依赖 %s（%s 天未更新）。"
+        % (
+            _int(risks.get("todo_count")),
+            _int(risks.get("fixme_count")),
+            _text(deps.get("oldest_pkg"), "无"),
+            "未知" if deps.get("oldest_days") is None else str(_int(deps.get("oldest_days"))),
+        )
+    )
     add("")
 
     # ── 四
@@ -392,13 +417,16 @@ def render_will_template(metrics: dict) -> str:
     for key in ("last_commit", "bus_factor", "trend", "deps", "issues", "docs"):
         part = parts.get(key)
         if isinstance(part, dict):
-            part_bits.append("%s %d/%d" % (_text(part.get("label"), key), _int(part.get("score")),
-                                           _int(part.get("max"))))
+            part_bits.append(
+                "%s %d/%d" % (_text(part.get("label"), key), _int(part.get("score")), _int(part.get("max")))
+            )
     if part_bits:
         add("---")
         add("")
-        add("> 健康分 %d/100（%s）。%s"
-            % (_int(score.get("total")), _text(score.get("mode"), "未知"), "；".join(part_bits)))
+        add(
+            "> 健康分 %d/100（%s）。%s"
+            % (_int(score.get("total")), _text(score.get("mode"), "未知"), "；".join(part_bits))
+        )
         add("")
 
     return "\n".join(out).rstrip() + "\n"
@@ -438,53 +466,83 @@ def render_eulogy_template(metrics: dict) -> str:
     add(prompts.EULOGY_HEADINGS[0])
     add("")
     add("- %s 第一次提交，项目开始。" % _short_date(life.get("first_commit")))
-    add("- 存续 %s，累计 %d 次提交、%d 个文件、%d 行代码。"
-        % (_text(life.get("age_text"), "%d 天" % _int(life.get("age_days"))),
-           _int(life.get("total_commits")), _int(size.get("tracked_files")), _int(size.get("loc"))))
-    add("- 衰退期：近 6 个月 %d 次提交，前 6 个月 %d 次提交，比值为 %.2f。"
-        % (_int(trend.get("recent_6m")), _int(trend.get("previous_6m")), _float(trend.get("ratio"))))
-    add("- %s 发出最后一条提交，此后 %d 天没有任何动静。"
-        % (_short_date(life.get("last_commit")), gap))
+    add(
+        "- 存续 %s，累计 %d 次提交、%d 个文件、%d 行代码。"
+        % (
+            _text(life.get("age_text"), "%d 天" % _int(life.get("age_days"))),
+            _int(life.get("total_commits")),
+            _int(size.get("tracked_files")),
+            _int(size.get("loc")),
+        )
+    )
+    add(
+        "- 衰退期：近 6 个月 %d 次提交，前 6 个月 %d 次提交，比值为 %.2f。"
+        % (_int(trend.get("recent_6m")), _int(trend.get("previous_6m")), _float(trend.get("ratio")))
+    )
+    add("- %s 发出最后一条提交，此后 %d 天没有任何动静。" % (_short_date(life.get("last_commit")), gap))
     add("- 最终健康分 %d/100。" % _int(score.get("total")))
     add("")
 
     # ── 二
     add(prompts.EULOGY_HEADINGS[1])
     add("")
-    add("- **直接原因**：最后一条提交信息是「%s」，之后 %d 天再没有新的提交；"
+    add(
+        "- **直接原因**：最后一条提交信息是「%s」，之后 %d 天再没有新的提交；"
         "最老依赖 %s 已 %s 天没有更新，构建环境随时可能失效。"
-        % (last_msg[:80], gap, _text(deps.get("oldest_pkg"), "无"),
-           "未知" if deps.get("oldest_days") is None else str(_int(deps.get("oldest_days")))))
+        % (
+            last_msg[:80],
+            gap,
+            _text(deps.get("oldest_pkg"), "无"),
+            "未知" if deps.get("oldest_days") is None else str(_int(deps.get("oldest_days"))),
+        )
+    )
     if bf == 1:
-        add("- **根本原因**：bus factor = 1。%s——所有上下文、发布权限和部署步骤都在一个人手里，"
-            "这个人停下来，项目就没有第二条腿。" % prompts.BUS_FACTOR_ONE_SENTENCE)
+        add(
+            "- **根本原因**：bus factor = 1。%s——所有上下文、发布权限和部署步骤都在一个人手里，"
+            "这个人停下来，项目就没有第二条腿。" % prompts.BUS_FACTOR_ONE_SENTENCE
+        )
     else:
-        add("- **根本原因**：bus factor = %d，贡献集中在 %d 人身上；"
-            "核心维护动力耗尽后，剩余的贡献者没有接手的动力。" % (bf, max(bf, 1)))
+        add(
+            "- **根本原因**：bus factor = %d，贡献集中在 %d 人身上；"
+            "核心维护动力耗尽后，剩余的贡献者没有接手的动力。" % (bf, max(bf, 1))
+        )
     readme_state = (
         "README 缺失，新来的人连怎么启动都不知道"
         if not docs.get("has_readme")
         else "README 缺少安装说明或可运行示例"
     )
-    add("- **加速因素**：%s；%d 处 TODO、%d 处 FIXME 长期未清；issue 中位关闭耗时 %s；%s。"
+    add(
+        "- **加速因素**：%s；%d 处 TODO、%d 处 FIXME 长期未清；issue 中位关闭耗时 %s；%s。"
         % (
             readme_state,
-            _int(risks.get("todo_count")), _int(risks.get("fixme_count")),
-            "无数据" if issues.get("median_days") is None
+            _int(risks.get("todo_count")),
+            _int(risks.get("fixme_count")),
+            "无数据"
+            if issues.get("median_days") is None
             else "%d 天" % int(_float(issues.get("median_days"))),
             "趋势已连续两期下滑" if _float(trend.get("ratio")) < 0.5 else "活跃度缓慢衰减",
-        ))
+        )
+    )
     add("")
 
     # ── 三
     add(prompts.EULOGY_HEADINGS[2])
     add("")
-    add("- 仍在被使用的部分：%d 个模块、%d 行代码，主语言 %s。"
-        % (_int(size.get("modules")), _int(size.get("loc")),
-           "、".join(_text(i.get("name"), "?") for i in _as_list(size.get("languages"))[:3]
-                    if isinstance(i, dict)) or "未采集"))
-    add("- 未完成的承诺：TODO %d 个、FIXME %d 个，它们是被写下来但永远不会被兑现的计划。"
-        % (_int(risks.get("todo_count")), _int(risks.get("fixme_count"))))
+    add(
+        "- 仍在被使用的部分：%d 个模块、%d 行代码，主语言 %s。"
+        % (
+            _int(size.get("modules")),
+            _int(size.get("loc")),
+            "、".join(
+                _text(i.get("name"), "?") for i in _as_list(size.get("languages"))[:3] if isinstance(i, dict)
+            )
+            or "未采集",
+        )
+    )
+    add(
+        "- 未完成的承诺：TODO %d 个、FIXME %d 个，它们是被写下来但永远不会被兑现的计划。"
+        % (_int(risks.get("todo_count")), _int(risks.get("fixme_count")))
+    )
     stale = _as_list(risks.get("stale_core_files"))
     if stale:
         names = "、".join("`%s`" % _text(i.get("path"), "?") for i in stale[:3] if isinstance(i, dict))
@@ -492,9 +550,14 @@ def render_eulogy_template(metrics: dict) -> str:
     top_list = [p for p in _as_list(authors.get("top")) if isinstance(p, dict)]
     if _int(authors.get("total")):
         if top_list:
-            add("- 留下了 %d 位贡献者的一段历史，其中 %s 一人占了 %.1f%% 的提交。"
-                % (_int(authors.get("total")), _text(top_list[0].get("name"), "第一贡献者"),
-                   _float(top_list[0].get("share")) * 100))
+            add(
+                "- 留下了 %d 位贡献者的一段历史，其中 %s 一人占了 %.1f%% 的提交。"
+                % (
+                    _int(authors.get("total")),
+                    _text(top_list[0].get("name"), "第一贡献者"),
+                    _float(top_list[0].get("share")) * 100,
+                )
+            )
         else:
             add("- 留下了 %d 位贡献者的一段历史。" % _int(authors.get("total")))
     add("")
@@ -502,11 +565,14 @@ def render_eulogy_template(metrics: dict) -> str:
     # ── 四
     add(prompts.EULOGY_HEADINGS[3])
     add("")
-    add("1. 关键人不是风险提示，是倒计时。bus factor = %d 的仓库，应该在还能提交的时候就把发布权限、"
-        "部署步骤、密钥位置写进仓库文档，而不是留在一个人的脑子里。" % max(bf, 1))
-    add("2. 提交停止之前，信号早就出现了：趋势比值 %.2f、%d 处 FIXME 没有下降。"
-        "把这些当指标看，比事后写悼词有用。"
-        % (_float(trend.get("ratio")), _int(risks.get("fixme_count"))))
+    add(
+        "1. 关键人不是风险提示，是倒计时。bus factor = %d 的仓库，应该在还能提交的时候就把发布权限、"
+        "部署步骤、密钥位置写进仓库文档，而不是留在一个人的脑子里。" % max(bf, 1)
+    )
+    add(
+        "2. 提交停止之前，信号早就出现了：趋势比值 %.2f、%d 处 FIXME 没有下降。"
+        "把这些当指标看，比事后写悼词有用。" % (_float(trend.get("ratio")), _int(risks.get("fixme_count")))
+    )
     lesson_doc = (
         "3. README 缺位就是最高优先级的技术债：在一个没人维护的仓库里，文档是唯一的交接物。"
         if not docs.get("has_readme")
@@ -547,7 +613,7 @@ def _chapter_bodies(text: str, headings: list[str]) -> dict[str, str | None]:
             continue
         body_start = start + len(heading)
         body_end = len(text)
-        for later in headings[index + 1:]:
+        for later in headings[index + 1 :]:
             found = text.find(later)
             if found != -1:
                 body_end = found
@@ -775,9 +841,7 @@ def _generate_one(kind: str, metrics: dict, deadline: float) -> dict:
             "reason": reason_text,
         }
 
-    messages = (
-        prompts.build_will_prompt(metrics) if kind == "will" else prompts.build_eulogy_prompt(metrics)
-    )
+    messages = prompts.build_will_prompt(metrics) if kind == "will" else prompts.build_eulogy_prompt(metrics)
 
     remaining = deadline - time.time()
     if remaining <= 6:
@@ -874,8 +938,11 @@ def _run_parallel(jobs: list[str], metrics: dict, deadline: float) -> dict[str, 
                     out[job] = future.result(timeout=max(5, deadline - time.time() + 15))
                 except Exception as exc:
                     out[job] = {
-                        "text": (render_will_template(metrics) if job == "will"
-                                 else render_eulogy_template(metrics)),
+                        "text": (
+                            render_will_template(metrics)
+                            if job == "will"
+                            else render_eulogy_template(metrics)
+                        ),
                         "used_llm": False,
                         "model": "",
                         "reason": "并发生成异常：%s" % type(exc).__name__,
@@ -905,19 +972,20 @@ def _metrics_appendix(metrics: dict) -> str:
         "|---|---|",
         "| 健康分 | %d/100 |" % _int(score.get("total")),
         "| 首次提交 | %s |" % _short_date(life.get("first_commit")),
-        "| 最后提交 | %s（距今 %d 天） |" % (_short_date(life.get("last_commit")),
-                                        _int(life.get("days_since_last_commit"))),
+        "| 最后提交 | %s（距今 %d 天） |"
+        % (_short_date(life.get("last_commit")), _int(life.get("days_since_last_commit"))),
         "| 提交总数 | %d |" % _int(life.get("total_commits")),
         "| 追踪文件 / 代码行 | %d / %d |" % (_int(size.get("tracked_files")), _int(size.get("loc"))),
         "| 贡献者数 / bus factor | %d / %d |" % (_int(authors.get("total")), _int(authors.get("bus_factor"))),
         "| 近 6 月 / 前 6 月提交 | %d / %d（ratio %.2f） |"
         % (_int(trend.get("recent_6m")), _int(trend.get("previous_6m")), _float(trend.get("ratio"))),
         "| 依赖数 / 最老依赖天数 | %d / %s |"
-        % (_int(deps.get("count")),
-           "未知" if deps.get("oldest_days") is None else str(_int(deps.get("oldest_days")))),
+        % (
+            _int(deps.get("count")),
+            "未知" if deps.get("oldest_days") is None else str(_int(deps.get("oldest_days"))),
+        ),
         "| issue 中位关闭耗时 | %s |"
-        % ("无数据" if issues.get("median_days") is None
-           else "%.1f 天" % _float(issues.get("median_days"))),
+        % ("无数据" if issues.get("median_days") is None else "%.1f 天" % _float(issues.get("median_days"))),
         "| README | %s |" % ("有" if docs.get("has_readme") else "无"),
         "| TODO / FIXME | %d / %d |" % (_int(risks.get("todo_count")), _int(risks.get("fixme_count"))),
         "",
@@ -1033,10 +1101,15 @@ def generate_narrative(metrics: dict, *, mode: str | None = None) -> dict:
                 parts.append(render_will_template(fallback_metrics).strip())
             if fallback_mode in ("dead", "critical"):
                 parts.append(render_eulogy_template(fallback_metrics).strip())
-            body = ("\n\n%s\n\n" % prompts.SEPARATOR).join(parts) if len(parts) > 1 else \
-                (parts[0] if parts else "")
+            body = (
+                ("\n\n%s\n\n" % prompts.SEPARATOR).join(parts)
+                if len(parts) > 1
+                else (parts[0] if parts else "")
+            )
             if not body.strip():
-                body = "# 代码遗嘱 · 未知仓库\n\n%s\n\n## 一、我留下了什么\n\n指标不可用。\n" % DEGRADED_BANNER
+                body = (
+                    "# 代码遗嘱 · 未知仓库\n\n%s\n\n## 一、我留下了什么\n\n指标不可用。\n" % DEGRADED_BANNER
+                )
             result["markdown"] = "%s\n\n%s\n" % (DEGRADED_BANNER, body.strip())
             result["ok"] = True
         except Exception:
@@ -1055,5 +1128,4 @@ def generate_narrative(metrics: dict, *, mode: str | None = None) -> dict:
     return result
 
 
-__all__ = ["generate_narrative", "render_will_template", "render_eulogy_template", "MODES",
-           "DEGRADED_BANNER"]
+__all__ = ["generate_narrative", "render_will_template", "render_eulogy_template", "MODES", "DEGRADED_BANNER"]

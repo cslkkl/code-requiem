@@ -29,8 +29,9 @@ def _git(args, cwd):
     env["GIT_CONFIG_COUNT"] = "1"
     env["GIT_CONFIG_KEY_0"] = "http.proxy"
     env["GIT_CONFIG_VALUE_0"] = ""
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", env=env)
+    return subprocess.run(
+        ["git", *args], cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env
+    )
 
 
 class TestParseInput(unittest.TestCase):
@@ -114,8 +115,21 @@ class TestLocalFixtures(unittest.TestCase):
         """无论成功失败，调用方拿到的 dict 必须有全部键 —— 界面不该 KeyError。"""
         for url in (self.single, self.empty, self.plain, ""):
             m = analyze_repo(url)
-            for key in ("ok", "error", "repo", "life", "size", "authors", "trend",
-                        "deps", "issues", "docs", "risks", "score", "elapsed_sec"):
+            for key in (
+                "ok",
+                "error",
+                "repo",
+                "life",
+                "size",
+                "authors",
+                "trend",
+                "deps",
+                "issues",
+                "docs",
+                "risks",
+                "score",
+                "elapsed_sec",
+            ):
                 self.assertIn(key, m, f"{key} missing for {url!r}")
             self.assertIn("mode", m["score"])
 

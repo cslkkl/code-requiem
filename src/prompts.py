@@ -313,12 +313,19 @@ def render_metrics_brief(metrics: dict) -> str:
         trimmed = {
             "repo": repo,
             "life": life,
-            "size": {"tracked_files": size.get("tracked_files"), "loc": size.get("loc"),
-                     "modules": size.get("modules")},
+            "size": {
+                "tracked_files": size.get("tracked_files"),
+                "loc": size.get("loc"),
+                "modules": size.get("modules"),
+            },
             "authors": {"total": authors.get("total"), "bus_factor": authors.get("bus_factor")},
             "trend": trend,
-            "deps": {"status": deps.get("status"), "ecosystem": deps.get("ecosystem"),
-                     "count": deps.get("count"), "oldest_days": deps.get("oldest_days")},
+            "deps": {
+                "status": deps.get("status"),
+                "ecosystem": deps.get("ecosystem"),
+                "count": deps.get("count"),
+                "oldest_days": deps.get("oldest_days"),
+            },
             "issues": issues,
             "docs": docs,
             "score": {"total": score.get("total"), "mode": score.get("mode")},
@@ -359,7 +366,7 @@ def build_will_prompt(metrics: dict) -> list[dict]:
     path_block = "\n".join(f"{i}. {p}" for i, p in enumerate(paths, 1)) or "（无可用路径）"
 
     bus_rule = (
-        f'⚠️ 本仓库 bus factor = 1。第二章必须**逐字**出现这一句：'
+        f"⚠️ 本仓库 bus factor = 1。第二章必须**逐字**出现这一句："
         f"「{BUS_FACTOR_ONE_SENTENCE}」，不得改写、不得省略。"
         if bf == 1
         else "本仓库 bus factor > 1，第二章要说明「几个人扛住了 60% 的提交」意味着什么。"
@@ -484,15 +491,15 @@ def build_eulogy_prompt(metrics: dict) -> list[dict]:
 {EULOGY_DEATH_BULLETS[0]}...
 {EULOGY_DEATH_BULLETS[1]}...
 {EULOGY_DEATH_BULLETS[2]}...
-- 直接原因：最后一条提交信息是「{last_msg}」，距今 {_int(life.get('days_since_last_commit'))} 天；
+- 直接原因：最后一条提交信息是「{last_msg}」，距今 {_int(life.get("days_since_last_commit"))} 天；
   以及依赖 / issue / 文档等直接失效信号
 - 根本原因：{bf_hint}
 - 加速因素：趋势下滑、TODO/FIXME 堆积、无 README 或文档、依赖老化等
 
 {EULOGY_HEADINGS[2]}（它留下了什么）
 - 仍可能被使用的部分（代码规模、语言、模块）
-- 未完成的承诺：TODO {_int(_get(metrics, 'risks', 'todo_count'))} 个、
-  FIXME {_int(_get(metrics, 'risks', 'fixme_count'))} 个
+- 未完成的承诺：TODO {_int(_get(metrics, "risks", "todo_count"))} 个、
+  FIXME {_int(_get(metrics, "risks", "fixme_count"))} 个
 - 长期无人动过的核心文件、危险热点
 
 {EULOGY_HEADINGS[3]}（教训）
@@ -516,8 +523,9 @@ def build_eulogy_prompt(metrics: dict) -> list[dict]:
     ]
 
 
-def build_repair_prompt(headings: list[str], missing: list[str], mode: str,
-                        extra_rules: list[str] | None = None) -> dict:
+def build_repair_prompt(
+    headings: list[str], missing: list[str], mode: str, extra_rules: list[str] | None = None
+) -> dict:
     """校验不通过时的追加消息（重试一次）。"""
     kind = "代码遗嘱" if mode == "will" else "项目悼词"
     rules = "\n".join(f"- {rule}" for rule in (extra_rules or []))

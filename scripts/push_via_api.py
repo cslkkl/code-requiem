@@ -59,10 +59,15 @@ def git(*args: str) -> str:
 
 def api(method: str, path: str, payload: dict | None = None, tok: str = "") -> dict:
     r = requests.request(
-        method, f"{API}{path}",
-        headers={"Authorization": f"Bearer {tok}", "Accept": "application/vnd.github+json",
-                 "User-Agent": "code-requiem/1.0"},
-        json=payload, timeout=TIMEOUT,
+        method,
+        f"{API}{path}",
+        headers={
+            "Authorization": f"Bearer {tok}",
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "code-requiem/1.0",
+        },
+        json=payload,
+        timeout=TIMEOUT,
     )
     if r.status_code >= 300:
         raise SystemExit(f"{method} {path} → {r.status_code}: {r.text[:400]}")
@@ -89,9 +94,7 @@ def main() -> int:
 
     # 远端 sha 是否是本地历史里的祖先
     try:
-        behind = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", remote_sha, local_head], cwd=ROOT
-        )
+        behind = subprocess.run(["git", "merge-base", "--is-ancestor", remote_sha, local_head], cwd=ROOT)
         if behind.returncode != 0:
             raise SystemExit(f"远端 {remote_sha[:8]} 不在本地历史中，需要先 pull。本工具只负责快进推送。")
     except FileNotFoundError:
@@ -121,21 +124,38 @@ def main() -> int:
             full = ROOT / path
             if full.is_file():
                 content = full.read_bytes()
-                blob = api("POST", f"/repos/{owner}/{name}/git/blobs",
-                           {"content": base64.b64encode(content).decode(), "encoding": "base64"}, tok=tok)
+                blob = api(
+                    "POST",
+                    f"/repos/{owner}/{name}/git/blobs",
+                    {"content": base64.b64encode(content).decode(), "encoding": "base64"},
+                    tok=tok,
+                )
                 tree_entries.append({"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]})
             else:
                 # 文件被删除
                 tree_entries.append({"path": path, "mode": "100644", "type": "blob", "sha": None})
 
-        tree = api("POST", f"/repos/{owner}/{name}/git/trees",
-                   {"base_tree": base_tree, "tree": tree_entries}, tok=tok)
-        new_commit = api("POST", f"/repos/{owner}/{name}/git/commits",
-                         {"message": msg, "tree": tree["sha"], "parents": [parent]}, tok=tok)
+        tree = api(
+            "POST",
+            f"/repos/{owner}/{name}/git/trees",
+            {"base_tree": base_tree, "tree": tree_entries},
+            tok=tok,
+        )
+        new_commit = api(
+            "POST",
+            f"/repos/{owner}/{name}/git/commits",
+            {"message": msg, "tree": tree["sha"], "parents": [parent]},
+            tok=tok,
+        )
         parent = new_commit["sha"]
         print(f"  → {parent[:8]}")
 
-    api("PATCH", f"/repos/{owner}/{name}/git/refs/heads/{args.branch}", {"sha": parent, "force": False}, tok=tok)
+    api(
+        "PATCH",
+        f"/repos/{owner}/{name}/git/refs/heads/{args.branch}",
+        {"sha": parent, "force": False},
+        tok=tok,
+    )
     print(f"\n✅ 已推送 {len(commits)} 个 commit，远端 HEAD = {parent[:8]}")
     print("   本地 git 需执行：git fetch origin && git reset --hard origin/main（对齐远端 sha）")
     return 0

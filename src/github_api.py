@@ -106,8 +106,9 @@ def _get(path: str, params: dict | None = None):
         remaining = r.headers.get("X-RateLimit-Remaining")
         if remaining == "0" or "rate limit" in (r.text or "").lower():
             RATE_LIMITED = True
-            LAST_ERROR = ("GitHub API 配额已用完（匿名 60 次/小时）"
-                          + ("，当前已配置 GITHUB_TOKEN" if has_token() else "，配置 GITHUB_TOKEN 可提升到 5000 次/小时"))
+            LAST_ERROR = "GitHub API 配额已用完（匿名 60 次/小时）" + (
+                "，当前已配置 GITHUB_TOKEN" if has_token() else "，配置 GITHUB_TOKEN 可提升到 5000 次/小时"
+            )
         else:
             LAST_ERROR = "GitHub API 拒绝访问（403）"
     elif r.status_code == 404:
@@ -178,8 +179,9 @@ def _count_from_link(r) -> int | None:
         return None
 
 
-def commit_count(owner: str, repo: str, *, since: datetime | None = None,
-                 until: datetime | None = None) -> int | None:
+def commit_count(
+    owner: str, repo: str, *, since: datetime | None = None, until: datetime | None = None
+) -> int | None:
     """区间内的精确提交数。失败返回 None。"""
     tag = f"{since.isoformat() if since else '-'}|{until.isoformat() if until else '-'}"
     key = f"count:{owner}/{repo}:{tag}"
@@ -216,17 +218,29 @@ def analyze_issues(owner: str, repo: str, *, host: str = "github") -> dict:
     if cached is not None:
         return cached
 
-    r = _get(f"/repos/{owner}/{repo}/issues",
-             {"state": "all", "per_page": 100, "sort": "created", "direction": "desc"})
+    r = _get(
+        f"/repos/{owner}/{repo}/issues",
+        {"state": "all", "per_page": 100, "sort": "created", "direction": "desc"},
+    )
     if r is None:
-        return {"status": "unavailable", "closed_count": 0, "open_count": 0,
-                "median_days": None, "note": LAST_ERROR,
-                "rate_limited": RATE_LIMITED}
+        return {
+            "status": "unavailable",
+            "closed_count": 0,
+            "open_count": 0,
+            "median_days": None,
+            "note": LAST_ERROR,
+            "rate_limited": RATE_LIMITED,
+        }
     try:
         data = r.json()
     except Exception:
-        return {"status": "unavailable", "closed_count": 0, "open_count": 0,
-                "median_days": None, "note": "响应解析失败"}
+        return {
+            "status": "unavailable",
+            "closed_count": 0,
+            "open_count": 0,
+            "median_days": None,
+            "note": "响应解析失败",
+        }
     if not isinstance(data, list):
         return {"status": "unavailable", "closed_count": 0, "open_count": 0, "median_days": None}
 
@@ -249,8 +263,13 @@ def analyze_issues(owner: str, repo: str, *, host: str = "github") -> dict:
             open_count += 1
 
     if not closed_durations:
-        result = {"status": "ok", "closed_count": 0, "open_count": open_count,
-                  "median_days": None, "note": "样本窗口内没有已关闭 issue"}
+        result = {
+            "status": "ok",
+            "closed_count": 0,
+            "open_count": open_count,
+            "median_days": None,
+            "note": "样本窗口内没有已关闭 issue",
+        }
     else:
         result = {
             "status": "ok",

@@ -98,13 +98,15 @@ def fetch_commits(owner: str, repo: str, *, max_pages: int = MAX_PAGES) -> list[
             email = (author.get("email") or (item.get("author") or {}).get("login") or "").lower()
             name = author.get("name") or (item.get("author") or {}).get("login") or email
             msg = (commit.get("message") or "").splitlines()
-            out.append({
-                "sha": item.get("sha", ""),
-                "author": name,
-                "email": email,
-                "date": date,
-                "subject": msg[0][:200] if msg else "",
-            })
+            out.append(
+                {
+                    "sha": item.get("sha", ""),
+                    "author": name,
+                    "email": email,
+                    "date": date,
+                    "subject": msg[0][:200] if msg else "",
+                }
+            )
         if len(data) < PER_PAGE:
             break
     return out
@@ -133,8 +135,9 @@ def repo_meta(owner: str, repo: str) -> dict | None:
     }
 
 
-def download_tarball(owner: str, repo: str, dest_dir: str, *, branch: str | None = None,
-                     max_bytes: int = 400 * 1024 * 1024) -> str | None:
+def download_tarball(
+    owner: str, repo: str, dest_dir: str, *, branch: str | None = None, max_bytes: int = 400 * 1024 * 1024
+) -> str | None:
     """下载并解压 tarball 到 dest_dir/repo，返回仓库根目录路径。失败返回 None。"""
     ref = branch or "HEAD"
     urls = [

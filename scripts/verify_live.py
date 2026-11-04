@@ -54,26 +54,40 @@ def main() -> int:
             continue
         s = m["score"]
         a = m["authors"]
-        print(f"✅ {name}: {s['total']} 分 / {s['mode']} / bus_factor={a['bus_factor']} "
-              f"/ commits={m['life']['total_commits']} / 出生={m['life']['first_commit'][:10]} "
-              f"/ {elapsed:.1f}s")
-        results[name] = {"ok": True, "score": s["total"], "mode": s["mode"],
-                         "bus_factor": a["bus_factor"], "fingerprint": m["deterministic_key"]}
+        print(
+            f"✅ {name}: {s['total']} 分 / {s['mode']} / bus_factor={a['bus_factor']} "
+            f"/ commits={m['life']['total_commits']} / 出生={m['life']['first_commit'][:10]} "
+            f"/ {elapsed:.1f}s"
+        )
+        results[name] = {
+            "ok": True,
+            "score": s["total"],
+            "mode": s["mode"],
+            "bus_factor": a["bus_factor"],
+            "fingerprint": m["deterministic_key"],
+        }
 
     # 确定性验证：同一仓库连跑两次
     print("\n── 确定性验证 ──")
     a = analyze_repo(REPOS[0])
     b = analyze_repo(REPOS[0])
-    same = (a.get("ok") and b.get("ok")
-            and a["score"]["total"] == b["score"]["total"]
-            and a["deterministic_key"] == b["deterministic_key"])
+    same = (
+        a.get("ok")
+        and b.get("ok")
+        and a["score"]["total"] == b["score"]["total"]
+        and a["deterministic_key"] == b["deterministic_key"]
+    )
     print(f"同一仓库两次运行分数相同：{same}")
     if a.get("ok") and b.get("ok"):
-        print(f"  A={a['score']['total']} ({a['deterministic_key']})  B={b['score']['total']} ({b['deterministic_key']})")
+        print(
+            f"  A={a['score']['total']} ({a['deterministic_key']})  B={b['score']['total']} ({b['deterministic_key']})"
+        )
 
     out = ROOT / "docs" / "verification.json"
-    out.write_text(json.dumps({"results": results, "deterministic": same},
-                              ensure_ascii=False, indent=2), encoding="utf-8")
+    out.write_text(
+        json.dumps({"results": results, "deterministic": same}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     print(f"\n📄 验证结果已写入 {out}")
     return 0 if all(r.get("ok") for r in results.values()) and same else 1
 

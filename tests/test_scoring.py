@@ -20,12 +20,18 @@ class TestLastCommit(unittest.TestCase):
 
     def test_boundaries(self):
         cases = [
-            (0, 30), (7, 30),
-            (8, 25), (30, 25),
-            (31, 18), (90, 18),
-            (91, 10), (180, 10),
-            (181, 5), (365, 5),
-            (366, 0), (3000, 0),
+            (0, 30),
+            (7, 30),
+            (8, 25),
+            (30, 25),
+            (31, 18),
+            (90, 18),
+            (91, 10),
+            (180, 10),
+            (181, 5),
+            (365, 5),
+            (366, 0),
+            (3000, 0),
         ]
         for days, expected in cases:
             with self.subTest(days=days):
@@ -169,8 +175,14 @@ class TestMaxTotal(unittest.TestCase):
     """六维满分之和必须正好 100，否则分数区间会被压缩。"""
 
     def test_sum_is_100(self):
-        total = (scoring.LAST_COMMIT_MAX + scoring.BUS_FACTOR_MAX + scoring.TREND_MAX
-                 + scoring.DEPS_MAX + scoring.ISSUES_MAX + scoring.DOCS_MAX)
+        total = (
+            scoring.LAST_COMMIT_MAX
+            + scoring.BUS_FACTOR_MAX
+            + scoring.TREND_MAX
+            + scoring.DEPS_MAX
+            + scoring.ISSUES_MAX
+            + scoring.DOCS_MAX
+        )
         self.assertEqual(total, 100)
 
     def test_perfect_score_reaches_alive(self):

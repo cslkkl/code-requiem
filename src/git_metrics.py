@@ -25,28 +25,76 @@ MAX_REPO_MB = 500
 
 # 需要跳过统计的目录（第三方/vendor/构建产物）
 SKIP_DIRS = {
-    ".git", "node_modules", "vendor", "dist", "build", ".venv", "venv",
-    "__pycache__", ".mypy_cache", ".pytest_cache", "target", ".idea", ".gradle",
-    "site-packages", ".next", "coverage", ".tox", "Pods", "third_party",
+    ".git",
+    "node_modules",
+    "vendor",
+    "dist",
+    "build",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    "target",
+    ".idea",
+    ".gradle",
+    "site-packages",
+    ".next",
+    "coverage",
+    ".tox",
+    "Pods",
+    "third_party",
 }
 
 # 常见语言扩展名
 LANG_BY_EXT = {
-    ".py": "Python", ".js": "JavaScript", ".mjs": "JavaScript", ".cjs": "JavaScript",
-    ".ts": "TypeScript", ".tsx": "TypeScript", ".jsx": "JavaScript",
-    ".java": "Java", ".kt": "Kotlin", ".go": "Go", ".rs": "Rust", ".c": "C",
-    ".h": "C/C++", ".hpp": "C/C++", ".cc": "C/C++", ".cpp": "C/C++",
-    ".cs": "C#", ".rb": "Ruby", ".php": "PHP", ".swift": "Swift",
-    ".m": "Objective-C", ".scala": "Scala", ".sh": "Shell", ".lua": "Lua",
-    ".dart": "Dart", ".vue": "Vue", ".svelte": "Svelte", ".r": "R",
-    ".sql": "SQL", ".ex": "Elixir", ".exs": "Elixir", ".hs": "Haskell",
+    ".py": "Python",
+    ".js": "JavaScript",
+    ".mjs": "JavaScript",
+    ".cjs": "JavaScript",
+    ".ts": "TypeScript",
+    ".tsx": "TypeScript",
+    ".jsx": "JavaScript",
+    ".java": "Java",
+    ".kt": "Kotlin",
+    ".go": "Go",
+    ".rs": "Rust",
+    ".c": "C",
+    ".h": "C/C++",
+    ".hpp": "C/C++",
+    ".cc": "C/C++",
+    ".cpp": "C/C++",
+    ".cs": "C#",
+    ".rb": "Ruby",
+    ".php": "PHP",
+    ".swift": "Swift",
+    ".m": "Objective-C",
+    ".scala": "Scala",
+    ".sh": "Shell",
+    ".lua": "Lua",
+    ".dart": "Dart",
+    ".vue": "Vue",
+    ".svelte": "Svelte",
+    ".r": "R",
+    ".sql": "SQL",
+    ".ex": "Elixir",
+    ".exs": "Elixir",
+    ".hs": "Haskell",
 }
 
 # 视为「代码」的扩展名（用于 LOC 与模块统计）
 CODE_EXTS = set(LANG_BY_EXT)
 
-README_NAMES = ("README.md", "README.rst", "README.txt", "README", "readme.md", "Readme.md",
-                "README.markdown", "README.MD")
+README_NAMES = (
+    "README.md",
+    "README.rst",
+    "README.txt",
+    "README",
+    "readme.md",
+    "Readme.md",
+    "README.markdown",
+    "README.MD",
+)
 
 TODO_RE = re.compile(r"\b(TODO|FIXME|HACK|XXX)\b")
 HOTSPOT_RE = re.compile(r"\b(TODO|FIXME|HACK|XXX)\b[:\s]*(.{0,120})")
@@ -94,8 +142,9 @@ def _run_git(args: list[str], cwd: str | None = None, timeout: int = 180) -> sub
     )
 
 
-def clone_repo(url: str, workdir: str, *, depth: int = CLONE_DEPTH, timeout: int = 180,
-               attempts: int = 2) -> str:
+def clone_repo(
+    url: str, workdir: str, *, depth: int = CLONE_DEPTH, timeout: int = 180, attempts: int = 2
+) -> str:
     """浅克隆到 workdir/repo。失败抛 CloneError，带 kind。
 
     kind 取值：not_found / private / network / empty / invalid
@@ -120,16 +169,25 @@ def clone_repo(url: str, workdir: str, *, depth: int = CLONE_DEPTH, timeout: int
 
             stderr = (proc.stderr or "") + (proc.stdout or "")
             low = stderr.lower()
-            if "authentication failed" in low or "could not read username" in low or "permission denied" in low:
+            if (
+                "authentication failed" in low
+                or "could not read username" in low
+                or "permission denied" in low
+            ):
                 raise CloneError("private", "无法访问该仓库，请确认它是公开的")
             if "not found" in low or "404" in low or "does not exist" in low:
                 raise CloneError("not_found", "无法访问该仓库，请确认它是公开的，且地址没有拼错")
             if "empty repository" in low or "you appear to have cloned an empty" in low:
                 raise CloneError("empty", "这个项目还没有出生")
 
-            hints_network = ("could not resolve host" in low or "connection" in low
-                             or "timed out" in low or "failed to connect" in low
-                             or "couldn't connect" in low or "unable to access" in low)
+            hints_network = (
+                "could not resolve host" in low
+                or "connection" in low
+                or "timed out" in low
+                or "failed to connect" in low
+                or "couldn't connect" in low
+                or "unable to access" in low
+            )
             tail = stderr.strip().splitlines()[-1] if stderr.strip() else "未知错误"
             last = CloneError("network" if hints_network else "network", f"克隆失败：{tail}")
 
@@ -192,20 +250,28 @@ def collect_commits(repo_path: str, *, now: datetime, max_commits: int = MAX_COM
             cdate = _as_utc(datetime.fromisoformat(ciso))
         except Exception:
             continue
-        commits.append({
-            "sha": sha,
-            "author": an,
-            "email": (ae or "").strip().lower(),
-            "date": cdate,
-            "subject": subj,
-        })
+        commits.append(
+            {
+                "sha": sha,
+                "author": an,
+                "email": (ae or "").strip().lower(),
+                "date": cdate,
+                "subject": subj,
+            }
+        )
 
     total_in_log = len(commits)
     if not commits:
         return {
-            "commits": [], "total_commits": 0, "first": None, "last": None,
-            "author_counts": {}, "author_names": {},
-            "recent_6m": 0, "previous_6m": 0, "insufficient_history": True,
+            "commits": [],
+            "total_commits": 0,
+            "first": None,
+            "last": None,
+            "author_counts": {},
+            "author_names": {},
+            "recent_6m": 0,
+            "previous_6m": 0,
+            "insufficient_history": True,
             "truncated": False,
         }
 
@@ -324,8 +390,19 @@ def find_readme(repo_path: str) -> tuple[str | None, str]:
     return None, ""
 
 
-INSTALL_HINTS = ("install", "pip install", "npm install", "yarn add", "uv add",
-                 "poetry add", "go get", "cargo add", "usage", "使用方法", "安装")
+INSTALL_HINTS = (
+    "install",
+    "pip install",
+    "npm install",
+    "yarn add",
+    "uv add",
+    "poetry add",
+    "go get",
+    "cargo add",
+    "usage",
+    "使用方法",
+    "安装",
+)
 EXAMPLE_HINTS = ("```", ">>>", "$ ", "example", "示例", "demo")
 
 
@@ -367,12 +444,14 @@ def scan_risks(repo_path: str, code_files: list[str], *, max_hits: int = 40) -> 
             kind = m.group(1)
             counts[kind] = counts.get(kind, 0) + 1
             if len(hits) < max_hits:
-                hits.append({
-                    "path": f,
-                    "line": i,
-                    "kind": kind,
-                    "text": (m.group(2) or "").strip()[:100],
-                })
+                hits.append(
+                    {
+                        "path": f,
+                        "line": i,
+                        "kind": kind,
+                        "text": (m.group(2) or "").strip()[:100],
+                    }
+                )
             break  # 每个文件只取第一处，保证路径多样性
     return {"hits": hits, "counts": counts}
 
@@ -413,8 +492,14 @@ def file_history(repo_path: str, *, max_commits: int = MAX_COMMITS_ANALYZED) -> 
     return out
 
 
-def stale_core_files(repo_path: str, code_files: list[str], *, now: datetime,
-                     limit: int = 8, history: dict[str, dict] | None = None) -> list[dict]:
+def stale_core_files(
+    repo_path: str,
+    code_files: list[str],
+    *,
+    now: datetime,
+    limit: int = 8,
+    history: dict[str, dict] | None = None,
+) -> list[dict]:
     """找「改得最多 + 最久没碰」的核心文件 —— 典型的接手雷区。
 
     排序：改动次数降序（核心程度）→ 未改动天数降序（腐烂程度）→ 路径（保证稳定排序）。
@@ -429,12 +514,14 @@ def stale_core_files(repo_path: str, code_files: list[str], *, now: datetime,
             dt = _as_utc(datetime.fromisoformat(rec["last_date"]))
         except Exception:
             continue
-        rows.append({
-            "path": path,
-            "days_untouched": max(0, (now - dt).days),
-            "commits": rec["commits"],
-            "loc": 0,
-        })
+        rows.append(
+            {
+                "path": path,
+                "days_untouched": max(0, (now - dt).days),
+                "commits": rec["commits"],
+                "loc": 0,
+            }
+        )
 
     rows.sort(key=lambda x: (-x["commits"], -x["days_untouched"], x["path"]))
     picked = rows[:limit]

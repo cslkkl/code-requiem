@@ -22,7 +22,7 @@ from pathlib import Path
 import requests
 
 HTTP_TIMEOUT = 5  # SPEC 明确要求 5 秒
-MAX_DEPS = 25     # 每次最多查这么多个，防止超大项目把总耗时拖爆
+MAX_DEPS = 25  # 每次最多查这么多个，防止超大项目把总耗时拖爆
 TOTAL_BUDGET_SEC = 25
 WORKERS = 10
 
@@ -42,6 +42,7 @@ _NEG_CACHE_TTL_SEC = 6 * 3600
 
 def _cache_path(url: str) -> Path:
     import hashlib
+
     h = hashlib.sha256(url.encode()).hexdigest()[:20]
     return _CACHE_DIR / f"{h}.json"
 
@@ -67,6 +68,7 @@ def _cache_put(key: str, value) -> None:
         p.write_text(json.dumps(value), encoding="utf-8")
     except Exception:
         pass
+
 
 _UA = {"User-Agent": "code-requiem/1.0 (dependency health check)"}
 
@@ -115,7 +117,7 @@ def _parse_pyproject(text: str) -> list[dict]:
                 m = REQ_RE.match(str(item))
                 if m:
                     deps.append({"name": m.group(1), "version": ""})
-        poetry = ((data.get("tool", {}) or {}).get("poetry", {}) or {})
+        poetry = (data.get("tool", {}) or {}).get("poetry", {}) or {}
         for name, spec in (poetry.get("dependencies", {}) or {}).items():
             if name.lower() == "python":
                 continue
@@ -153,8 +155,11 @@ def detect_manifest(repo_path: str) -> dict:
     py_req = root / "requirements.txt"
     if py_req.is_file():
         try:
-            return {"ecosystem": "python", "file": "requirements.txt",
-                    "deps": _parse_requirements(py_req.read_text(encoding="utf-8", errors="replace"))}
+            return {
+                "ecosystem": "python",
+                "file": "requirements.txt",
+                "deps": _parse_requirements(py_req.read_text(encoding="utf-8", errors="replace")),
+            }
         except Exception:
             pass
 
@@ -293,18 +298,39 @@ def analyze_deps(repo_path: str) -> dict:
     try:
         manifest = detect_manifest(repo_path)
     except Exception:
-        return {"status": "error", "ecosystem": "none", "count": 0,
-                "oldest_pkg": None, "oldest_days": None, "items": [], "file": ""}
+        return {
+            "status": "error",
+            "ecosystem": "none",
+            "count": 0,
+            "oldest_pkg": None,
+            "oldest_days": None,
+            "items": [],
+            "file": "",
+        }
 
     eco = manifest["ecosystem"]
     deps = manifest["deps"][:MAX_DEPS]
 
     if eco == "none":
-        return {"status": "none", "ecosystem": "none", "count": 0,
-                "oldest_pkg": None, "oldest_days": None, "items": [], "file": ""}
+        return {
+            "status": "none",
+            "ecosystem": "none",
+            "count": 0,
+            "oldest_pkg": None,
+            "oldest_days": None,
+            "items": [],
+            "file": "",
+        }
     if eco == "go" or not deps:
-        return {"status": "unsupported", "ecosystem": eco, "count": len(manifest["deps"]),
-                "oldest_pkg": None, "oldest_days": None, "items": [], "file": manifest["file"]}
+        return {
+            "status": "unsupported",
+            "ecosystem": eco,
+            "count": len(manifest["deps"]),
+            "oldest_pkg": None,
+            "oldest_days": None,
+            "items": [],
+            "file": manifest["file"],
+        }
 
     lookup = _pypi_last_release_days if eco == "python" else _npm_last_release_days
     items: list[dict] = []
@@ -327,33 +353,60 @@ def analyze_deps(repo_path: str) -> dict:
                     continue
                 items.append({"name": d["name"], "version": d.get("version", ""), "days": days})
     except concurrent.futures.TimeoutError:
-        return {"status": "timeout", "ecosystem": eco, "count": len(deps),
-                "oldest_pkg": None, "oldest_days": None, "items": items, "file": manifest["file"]}
+        return {
+            "status": "timeout",
+            "ecosystem": eco,
+            "count": len(deps),
+            "oldest_pkg": None,
+            "oldest_days": None,
+            "items": items,
+            "file": manifest["file"],
+        }
     except Exception:
-        return {"status": "error", "ecosystem": eco, "count": len(deps),
-                "oldest_pkg": None, "oldest_days": None, "items": items, "file": manifest["file"]}
+        return {
+            "status": "error",
+            "ecosystem": eco,
+            "count": len(deps),
+            "oldest_pkg": None,
+            "oldest_days": None,
+            "items": items,
+            "file": manifest["file"],
+        }
 
     if not items:
         # 一个都没查成 → 视作网络失败
-        return {"status": "timeout" if failures else "none", "ecosystem": eco,
-                "count": len(deps), "oldest_pkg": None, "oldest_days": None,
-                "items": [], "file": manifest["file"]}
+        return {
+            "status": "timeout" if failures else "none",
+            "ecosystem": eco,
+            "count": len(deps),
+            "oldest_pkg": None,
+            "oldest_days": None,
+            "items": [],
+            "file": manifest["file"],
+        }
 
     # -1 表示已从 registry 删除，按 SPEC 视为最弱环节（≥730 天档）
     deleted = [i for i in items if i["days"] == -1]
     if deleted:
         oldest = deleted[0]
         return {
-            "status": "ok", "ecosystem": eco, "count": len(deps),
-            "oldest_pkg": oldest["name"], "oldest_days": 9999,
+            "status": "ok",
+            "ecosystem": eco,
+            "count": len(deps),
+            "oldest_pkg": oldest["name"],
+            "oldest_days": 9999,
             "items": sorted(items, key=lambda x: (-x["days"], x["name"])),
-            "file": manifest["file"], "deleted": [i["name"] for i in deleted],
+            "file": manifest["file"],
+            "deleted": [i["name"] for i in deleted],
         }
 
     oldest = max(items, key=lambda x: (x["days"], x["name"]))
     return {
-        "status": "ok", "ecosystem": eco, "count": len(deps),
-        "oldest_pkg": oldest["name"], "oldest_days": int(oldest["days"]),
+        "status": "ok",
+        "ecosystem": eco,
+        "count": len(deps),
+        "oldest_pkg": oldest["name"],
+        "oldest_days": int(oldest["days"]),
         "items": sorted(items, key=lambda x: (-x["days"], x["name"]))[:15],
         "file": manifest["file"],
     }
