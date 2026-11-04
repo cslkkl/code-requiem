@@ -6,8 +6,9 @@
 |---|---|---|---|
 | `analyzer.py` | 编排全流程、错误分类、CLI 入口 | `analyze_repo(url, now, token, progress)` | `app.py`、`scripts/verify_live.py` |
 | `scoring.py` | 六维打分的**纯函数**，SPEC 第 3 章逐条实现 | `score_last_commit`、`bus_factor`、`score_trend`、`score_deps`、`score_issues`、`score_docs`、`decide_mode` | `analyzer.py`、`tests/test_scoring.py` |
-| `git_metrics.py` | 克隆、提交历史、文件级风险扫描 | `clone_repo`、`collect_commits`、`count_loc`、`analyze_readme`、`scan_risks`、`stale_core_files`、`human_age` | `analyzer.py` |
-| `deps.py` | 依赖健康度（PyPI / npm），带磁盘缓存 | `analyze_deps`、`detect_manifest` | `analyzer.py` |
+| `explain.py` | **解释层**：把每个分数翻成「事实 → 机制 → 影响」三段人话。不打分、不联网 | `explain_dimensions`、`top_deductions`、`verdict`、`DIM_LABELS` | `analyzer.py`、`app.py`、`tests/test_explain.py` |
+| `git_metrics.py` | 克隆、提交历史、文件级风险扫描、机器人识别 | `clone_repo`、`collect_commits`、`count_loc`、`scan_risks`、`stale_core_files`、`is_bot`、`human_age` | `analyzer.py` |
+| `deps.py` | 依赖健康度（PyPI / npm），区分 runtime / dev，带磁盘缓存 | `analyze_deps`、`detect_manifest` | `analyzer.py` |
 | `github_api.py` | GitHub REST：元信息、提交计数、issue、配额感知 | `repo_meta`、`commit_count`、`analyze_issues`、`rate_limit_status`、`has_token` | `analyzer.py`、`issues.py` |
 | `issues.py` | 兼容转出层 | 转出 `github_api` 的三个函数 | 旧代码 |
 | `net.py` | TCP 可达性探测（3 秒超时，60 秒缓存） | `github_git_available`、`tcp_open` | `fetch_api.py`、`analyzer.py` |
@@ -15,7 +16,17 @@
 | `llm.py` | OpenAI 兼容客户端，三级 provider 解析 | `chat`、`provider_info` | `narrative.py` |
 | `prompts.py` | 遗嘱 / 悼词 prompt 模板 + 章节标题常量 | `build_will_prompt`、`build_eulogy_prompt`、`WILL_HEADINGS`、`EULOGY_HEADINGS` | `narrative.py` |
 | `narrative.py` | 三模式串联、降级模板 | `generate_narrative(metrics, mode)` | `app.py`、`scripts/*` |
-| `format.py` | 界面层格式化工具 | 见文件内 docstring | `app.py` |
+| `format.py` | 界面层格式化工具 | `dim_rows`、`key_metrics`、`mode_meta` | `app.py` |
+
+## 分数与理由为什么分两层
+
+| 层 | 文件 | 职责 | 能否改阈值 |
+|---|---|---|---|
+| 分数 | `scoring.py` | 严格照 SPEC 第 3 章算数字，输出可被单元测试逐条比对 | 只能按 SPEC 改 |
+| 理由 | `explain.py` | 把同一批观测值写成「观察到什么 / 为什么扣 / 对你意味着什么」 | 可以自由改写措辞 |
+
+这样「分数可追溯到 SPEC 哪一行」和「理由可追溯到哪一个观测值」互不污染。
+**改 `scoring.py` 必须同步 `tests/test_scoring.py`；改 `explain.py` 必须同步 `tests/test_explain.py`。**
 
 ## 变更影响路由
 

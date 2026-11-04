@@ -98,6 +98,16 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
           "docs":        {"score": int, "max": 5,  "label": str, "detail": str},
       },
   },
+  "data_quality": {                 # 哪些维度是「拿不到数据」而非「数据确实差」
+      "complete": bool,
+      "unavailable_dimensions": [str],  # "issues" | "deps" | "trend"
+      "note": str,
+  },
+  "explain": {                        # 每维度的「事实 / 机制 / 影响」三段解释
+      "<dim>": {"score": int, "max": int, "fact": str, "mechanism": str, "impact": str},
+  },
+  "verdict": str,                     # 一句话总判断
+  "top_deductions": [{"key","label","lost","score","max","reason","impact"}],
   "elapsed_sec": float,
   "deterministic_key": str,           # 用于验证确定性的指纹
 }

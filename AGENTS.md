@@ -7,6 +7,7 @@ L3 标准模块：Python 包 + src/ + tests/ + 文档网络 + CI。
 ## 全局规则
 
 - 分析层（打分）**零 AI、零随机、零 LLM** —— 同一仓库两次运行必须同分（见 `tests/test_boundary.py::test_determinism_same_local_repo`）
+- **分数与理由分两层**：`src/scoring.py` 只照 SPEC 算数字，`src/explain.py` 只写人话（事实 → 机制 → 影响）。改任一层都要同步各自的测试
 - 所有 LLM 调用必须可降级：失败时输出结构化指标，绝不白屏（见 `src/narrative.py`）
 - 密钥只走环境变量，绝不写进仓库（见 `.gitignore`）
 - 架构与数据流 → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -41,7 +42,7 @@ git -c "http.https://github.com/.proxy=" push origin main
 
 ## 验证快照
 
-- 单元测试：43 passed（2026-11-04）
+- 单元测试：71 passed（2026-11-05，含 explain 层 28 个）
 - Lint：ruff clean（2026-11-05）
 - 真实仓库验证（`scripts/verify_live.py`，结果见 [docs/verification.json](docs/verification.json)）
   - `kornia/kornia` → 85 分 / alive / bus factor 4
@@ -52,7 +53,7 @@ git -c "http.https://github.com/.proxy=" push origin main
 ## 待办
 
 - [ ] HF Spaces 部署（需要 `HF_TOKEN`，尚未拿到）
-- [ ] `docs/screenshots/main.png` 界面截图
+- [x] 界面截图（4 张，docs/screenshots/）
 - [ ] 60-90 秒演示视频
 - [ ] Devpost 七项提交（`docs/DEVPOST.md` 已备好，`[HF_SPACE_URL]` 待填）
 
