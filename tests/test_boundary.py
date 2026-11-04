@@ -9,6 +9,7 @@ SPEC 第 5 章列的 7 种边界情况里，能在离线环境用本地夹具验
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -87,6 +88,11 @@ class TestLocalFixtures(unittest.TestCase):
         # 非 Git 目录
         cls.plain = os.path.join(cls.tmp, "plain")
         os.makedirs(cls.plain)
+
+    @classmethod
+    def tearDownClass(cls):
+        """必须清理：不清理会在 %TEMP% 里堆出几十个 requiem-test-* 目录。"""
+        shutil.rmtree(cls.tmp, ignore_errors=True)
 
     def test_empty_repo_returns_birth_message(self):
         m = analyze_repo(self.empty)

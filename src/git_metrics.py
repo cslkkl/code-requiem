@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import atexit
 import os
 import re
 import shutil
@@ -592,8 +593,58 @@ def last_commit_message(repo_path: str) -> str:
 
 
 def cleanup(path: str) -> None:
+    """删掉一个临时工作目录，并从进程级清单里移除。"""
     shutil.rmtree(path, ignore_errors=True)
+    _ACTIVE_WORKDIRS.discard(path)
 
 
 def make_workdir() -> str:
-    return tempfile.mkdtemp(prefix="requiem-")
+    path = tempfile.mkdtemp(prefix="requiem-")
+    # 登记到进程级清单：即使调用方忘了 cleanup，atexit 也会兜住。
+    _ACTIVE_WORKDIRS.add(path)
+    return path
+
+
+def cleanup_stale(max_age_hours: float = 6.0) -> int:
+    """清掉历史遗留的临时目录。
+
+    为什么需要：analyze 的 finally 只在正常返回/抛异常时执行。
+    进程被强杀（Ctrl-C、任务管理器、OOM killer、CI 超时）时 finally 不跑，
+    浅克隆出来的几万个文件就会永久留在 %TEMP% 里。实测跑 8 个仓库后
+    留下了 49 个 requiem-* 目录，其中一个还是巨型仓库。
+    """
+    import tempfile as _tf
+
+    root = _tf.gettempdir()
+    now = time.time()
+    removed = 0
+    try:
+        entries = os.listdir(root)
+    except Exception:
+        return 0
+    for name in entries:
+        if not name.startswith("requiem-"):
+            continue
+        full = os.path.join(root, name)
+        if not os.path.isdir(full):
+            continue
+        try:
+            if now - os.path.getmtime(full) < max_age_hours * 3600:
+                continue
+        except Exception:
+            continue
+        shutil.rmtree(full, ignore_errors=True)
+        removed += 1
+    return removed
+
+
+_ACTIVE_WORKDIRS: set[str] = set()
+
+
+def _cleanup_all_at_exit() -> None:
+    for path in list(_ACTIVE_WORKDIRS):
+        shutil.rmtree(path, ignore_errors=True)
+    _ACTIVE_WORKDIRS.clear()
+
+
+atexit.register(_cleanup_all_at_exit)
