@@ -318,14 +318,31 @@ def first_author(metrics: dict) -> dict:
 
 def dim_rows(metrics: dict) -> list[dict]:
     """返回六维（按契约顺序）以及契约里多出来的维度。每项：
-    {key, name, score, max, ratio, detail, pct_text}
+    {key, name, score, max, ratio, detail, pct, fact, mechanism, impact}
+
+    fact / mechanism / impact 来自 src/explain.py：说清「观察到什么、为什么扣分、
+    对要接手的人意味着什么」。explain 缺失时这三项为空串，界面只显示 detail。
     """
     parts = safe_get(metrics, "score.parts", {}) or {}
     if not isinstance(parts, dict):
         parts = {}
+    explain = safe_get(metrics, "explain", {}) or {}
+    if not isinstance(explain, dict):
+        explain = {}
     meta = mode_meta(safe_get(metrics, "score.mode") or mode_from_total(score_int(metrics)))
     rows: list[dict] = []
     seen: set[str] = set()
+
+    def _explained(key: str, part: dict) -> dict:
+        e = explain.get(key)
+        e = e if isinstance(e, dict) else {}
+        return {
+            "fact": str(e.get("fact") or ""),
+            "mechanism": str(e.get("mechanism") or ""),
+            "impact": str(e.get("impact") or ""),
+            # 兜底：explain 没给就退回一段式 detail
+            "detail": str(e.get("fact") or part.get("detail") or "该项未提供说明（分析层降级）"),
+        }
 
     for key, fallback_name, default_max in DIM_ORDER:
         seen.add(key)
@@ -334,6 +351,7 @@ def dim_rows(metrics: dict) -> list[dict]:
         score = _int(part.get("score")) or 0
         mx = _int(part.get("max")) or default_max
         ratio = _clamp01(score / mx) if mx else 0.0
+        ex = _explained(key, part)
         rows.append(
             {
                 "key": key,
@@ -342,7 +360,10 @@ def dim_rows(metrics: dict) -> list[dict]:
                 "max": mx,
                 "ratio": ratio,
                 "pct": round(ratio * 100),
-                "detail": str(part.get("detail") or "该项未提供说明（分析层降级）"),
+                "detail": ex["detail"],
+                "fact": ex["fact"],
+                "mechanism": ex["mechanism"],
+                "impact": ex["impact"],
                 "tone": meta["tone"],
             }
         )
@@ -353,6 +374,7 @@ def dim_rows(metrics: dict) -> list[dict]:
         score = _int(part.get("score")) or 0
         mx = _int(part.get("max")) or 0
         ratio = _clamp01(score / mx) if mx else 0.0
+        ex = _explained(key, part)
         rows.append(
             {
                 "key": str(key),
@@ -361,7 +383,10 @@ def dim_rows(metrics: dict) -> list[dict]:
                 "max": mx,
                 "ratio": ratio,
                 "pct": round(ratio * 100),
-                "detail": str(part.get("detail") or ""),
+                "detail": ex["detail"],
+                "fact": ex["fact"],
+                "mechanism": ex["mechanism"],
+                "impact": ex["impact"],
                 "tone": meta["tone"],
             }
         )

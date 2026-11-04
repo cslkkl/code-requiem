@@ -38,6 +38,20 @@ if _SRC_DIR not in sys.path:
 
 from src import format as fmt  # noqa: E402
 
+# 维度键 → 中文名。优先用 explain 层的定义，缺失时退回本地表，
+# 保证「部分维度数据未获取」这条提示永远能说出人话。
+try:
+    from src.explain import DIM_LABELS as _DIM_LABELS  # noqa: E402
+except Exception:  # pragma: no cover - 极端降级
+    _DIM_LABELS = {
+        "last_commit": "最后提交距今",
+        "bus_factor": "Bus Factor",
+        "trend": "提交活跃度趋势",
+        "deps": "依赖健康度",
+        "issues": "Issue 响应",
+        "docs": "文档完整度",
+    }
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 依赖注入：三个模块可能还在并行开发中，缺失时不能让页面崩
 # ─────────────────────────────────────────────────────────────────────────────
@@ -401,6 +415,14 @@ _CSS = """
 .req-dim__track{height:5px;background:#171B1F;margin:9px 0 7px;border-radius:1px;overflow:hidden;}
 .req-dim__fill{height:100%;border-radius:1px;}
 .req-dim__detail{font-size:.76rem;line-height:1.6;color:var(--req-ink-mute);}
+.req-dim__why{
+  font-size:.74rem;line-height:1.65;color:#8E928B;margin-top:5px;
+  padding-left:9px;border-left:1px solid #23282D;
+}
+.req-dim__why b{
+  font-family:var(--req-mono);font-size:.66rem;letter-spacing:.12em;
+  color:var(--req-brass);margin-right:6px;font-weight:400;
+}
 
 /* ── 指标卡（st.metric 覆写） ─────────────────────────── */
 [data-testid="stMetric"]{
@@ -839,6 +861,22 @@ def render_top_alerts(result: dict | None) -> None:
             unsafe_allow_html=True,
         )
 
+    quality = metrics.get("data_quality") or {}
+    if quality and not quality.get("complete", True):
+        dims = quality.get("unavailable_dimensions") or []
+        if dims:
+            st.markdown(
+                notice(
+                    "incomplete",
+                    "<b>部分维度数据未获取</b> · "
+                    f"{esc('、'.join(_DIM_LABELS.get(d, d) for d in dims))} 本次拿不到外部数据，"
+                    "按 SPEC 取了保守分，因此总分可能比数据完整时偏低。"
+                    "配置 <code>GITHUB_TOKEN</code> 可消除大部分限制。",
+                    "warn",
+                ),
+                unsafe_allow_html=True,
+            )
+
     if narrative.get("degraded"):
         reason = narrative.get("degraded_reason") or "LLM 不可达"
         st.markdown(
@@ -953,6 +991,16 @@ def render_dims(metrics: dict) -> None:
             color = "#A8645F"
         elif row["ratio"] < 0.67:
             color = "#C9A44C"
+
+        # 三段式解释：观察 → 机制 → 对你的影响。
+        # explain 层没给时退回单段 detail，保证任何情况下都有话说。
+        body = f'<div class="req-dim__detail">{esc(row["detail"])}</div>'
+        if row.get("mechanism") or row.get("impact"):
+            parts = [f'<div class="req-dim__why"><b>为什么</b> {esc(row["mechanism"])}</div>']
+            if row.get("impact"):
+                parts.append(f'<div class="req-dim__why"><b>对你</b> {esc(row["impact"])}</div>')
+            body += "".join(parts)
+
         chunks.append(
             '<div class="req-dim">'
             '<div class="req-dim__top">'
@@ -962,9 +1010,7 @@ def render_dims(metrics: dict) -> None:
             "</div>"
             '<div class="req-dim__track">'
             f'<div class="req-dim__fill" style="width:{width}%;background:{color}"></div>'
-            "</div>"
-            f'<div class="req-dim__detail">{esc(row["detail"])}</div>'
-            "</div>"
+            "</div>" + body + "</div>"
         )
     chunks.append("</div>")
     st.markdown("".join(chunks), unsafe_allow_html=True)
@@ -1003,9 +1049,13 @@ def render_document(metrics: dict, narrative: dict) -> None:
         model = str((narrative or {}).get("model") or "结构化指标（无 LLM）")
     elapsed = fmt.elapsed_text((narrative or {}).get("elapsed_sec"))
     sections = (narrative or {}).get("sections") or {}
-    section_count = (
-        len([k for k, v in sections.items() if str(v or "").strip()]) if isinstance(sections, dict) else 0
-    )
+    # 章数按正文里的「## 」二级标题数算，而不是按 sections 字典的键数 ——
+    # 后者只是 will/eulogy 两段，用来显示「几章」会误导读者。
+    markdown_text = str((narrative or {}).get("markdown") or "")
+    section_count = len([ln for ln in markdown_text.splitlines() if ln.strip().startswith("## ")])
+    if not section_count and isinstance(sections, dict):
+        # 极端降级：没有 markdown 时退回按段落算，至少不为 0
+        section_count = len([k for k, v in sections.items() if str(v or "").strip()])
 
     with st.container(border=True):
         st.markdown(
