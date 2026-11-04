@@ -34,6 +34,7 @@ for _p in (_SRC_DIR, _SRC_DIR.parent):
 try:  # 包内导入（Streamlit / HF Spaces / 测试）
     from . import deps as deps_mod  # type: ignore
     from . import (
+        explain,  # type: ignore
         fetch_api,  # type: ignore
         github_api,  # type: ignore
         net,  # type: ignore
@@ -43,6 +44,7 @@ try:  # 包内导入（Streamlit / HF Spaces / 测试）
     from . import issues as issues_mod  # type: ignore
 except ImportError:  # 脚本模式（python src/analyzer.py）
     import deps as deps_mod  # type: ignore  # noqa: E402
+    import explain  # type: ignore  # noqa: E402
     import fetch_api  # type: ignore  # noqa: E402
     import git_metrics as gm  # type: ignore  # noqa: E402
     import github_api  # type: ignore  # noqa: E402
@@ -302,6 +304,7 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
         # 2) 总提交数：rev-list 在浅克隆里只数得到 200，用 API 的 Link 头拿精确值。
         # 3) 6/6 月趋势：深度 200 会让「前 6 个月」永远为 0，导致趋势恒判为增长。
         repo_meta = None
+        api_enriched = False
         if repo["host"] == "github" and fetch_api.can_use_api():
             _p("正在校正仓库元信息与趋势窗口…")
             repo_meta = github_api.repo_meta(repo["owner"], repo["name"])
@@ -318,6 +321,7 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
             if recent is not None and prev is not None:
                 hist["recent_6m"] = recent
                 hist["previous_6m"] = prev
+                api_enriched = True
             # 只有 meta 存在时才用 created_at 覆盖 first；
             # 但即使 meta 缺失，也要用 git 日志里的最早时间判断是否不足 12 个月
             birth = None
@@ -373,7 +377,10 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
             sample_note=sample_note,
             repo_path=repo_path,
             elapsed=time.perf_counter() - t0,
+            api_enriched=api_enriched,
         )
+        if repo_meta:
+            metrics["repo_meta"] = repo_meta
         return metrics
 
     except Exception as exc:  # 兜底：绝不让未捕获异常冒到界面
@@ -524,6 +531,7 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
         ),
         repo_path=root,
         elapsed=time.perf_counter() - t0,
+        api_enriched=True,  # API 路径本身就是靠 API 拿的数据
     )
     metrics["data_source"] = "github-api"
     metrics["repo_meta"] = meta
@@ -592,8 +600,13 @@ def _build_metrics(
     sample_note,
     repo_path,
     elapsed,
+    api_enriched: bool = False,
 ) -> dict:
-    """把采集到的原始数据组装成契约结构，并逐维打分。"""
+    """把采集到的原始数据组装成契约结构，并逐维打分。
+
+    api_enriched: GitHub API 是否成功补齐了趋势窗口与精确提交数。
+                  False 时趋势项退化为「历史不足」的 10 分，且要标进 data_quality。
+    """
     last = hist["last"]
     first = hist["first"]
     days_since = max(0, (now - last).days)
@@ -630,9 +643,19 @@ def _build_metrics(
         docs_info["has_example"],
     )
 
-    total = s_last + s_bf + s_trend + s_deps + s_iss + s_doc
-    total = max(0, min(100, int(total)))
-    mode = scoring.decide_mode(total)
+    # ── 数据完整性：哪些维度是「拿不到数据」而不是「数据确实是差」──────────
+    # 这两件事对用户的意义完全不同：
+    #   issue 中位 90 天 = 项目真的不响应（1 分）
+    #   issue 拿不到     = 我们的网络/配额问题（也按 SPEC 记 1 分）
+    # 如果混在一起，同一个仓库在 API 可用与不可用时会显示不同分数，
+    # 用户会以为打分不稳定。所以显式标注，界面上要提示。
+    unavailable: list[str] = []
+    if issues_info.get("status") == "unavailable":
+        unavailable.append("issues")
+    if deps_info.get("status") in ("timeout", "error"):
+        unavailable.append("deps")
+    if not api_enriched:
+        unavailable.append("trend")
 
     # ── 作者排行 ──────────────────────────────────────────────────────────
     total_commits = sum(hist["author_counts"].values()) or 1
@@ -662,12 +685,26 @@ def _build_metrics(
                 continue
             stale_final.append({"path": f, "days_untouched": -1, "commits": -1, "loc": 0})
 
+    total = s_last + s_bf + s_trend + s_deps + s_iss + s_doc
+    total = max(0, min(100, int(total)))
+    mode = scoring.decide_mode(total)
+
     metrics = {
         "ok": True,
         "error": None,
         "repo": {k: repo[k] for k in ("input", "host", "owner", "name", "url", "is_local")},
         "sampled": sampled,
         "sample_note": sample_note,
+        "data_quality": {
+            "complete": not unavailable,
+            "unavailable_dimensions": unavailable,
+            "note": (
+                ""
+                if not unavailable
+                else "以下维度的外部数据本次未能获取，按 SPEC 取了保守分，"
+                "所以分数可能比数据完整时偏低：" + "、".join(unavailable)
+            ),
+        },
         "life": {
             "first_commit": first.isoformat(),
             "last_commit": last.isoformat(),
@@ -704,6 +741,12 @@ def _build_metrics(
             "count": deps_info.get("count", 0),
             "oldest_pkg": deps_info.get("oldest_pkg"),
             "oldest_days": deps_info.get("oldest_days"),
+            # 下面三项供解释层判断「这条扣分是否真的伤运行时」
+            "oldest_scope": deps_info.get("oldest_scope"),
+            "oldest_runtime_pkg": deps_info.get("oldest_runtime_pkg"),
+            "oldest_runtime_days": deps_info.get("oldest_runtime_days"),
+            "runtime_count": deps_info.get("runtime_count"),
+            "dev_count": deps_info.get("dev_count"),
             "items": deps_info.get("items", []),
             "file": deps_info.get("file", ""),
         },
@@ -756,6 +799,19 @@ def _build_metrics(
         },
         "elapsed_sec": round(elapsed, 2),
     }
+
+    # ── 解释层：把每个分数翻译成「为什么扣、对要接手的人意味着什么」─────────
+    # 分数与理由分离：score.parts 里的数字严格来自 SPEC 阈值表，
+    # explain 里的人话由 src/explain.py 从同一批观测值生成，不参与打分。
+    try:
+        metrics["explain"] = explain.explain_dimensions(metrics)
+        metrics["verdict"] = explain.verdict(metrics)
+        metrics["top_deductions"] = explain.top_deductions(metrics, limit=3)
+    except Exception:
+        metrics["explain"] = {}
+        metrics["verdict"] = ""
+        metrics["top_deductions"] = []
+
     metrics["deterministic_key"] = _fingerprint(metrics)
     return metrics
 
