@@ -263,8 +263,6 @@ def render_will_template(metrics: dict) -> str:
     authors = _get(metrics, "authors", default={}) or {}
     trend = _get(metrics, "trend", default={}) or {}
     deps = _get(metrics, "deps", default={}) or {}
-    issues = _get(metrics, "issues", default={}) or {}
-    docs = _get(metrics, "docs", default={}) or {}
     risks = _get(metrics, "risks", default={}) or {}
     score = _get(metrics, "score", default={}) or {}
 

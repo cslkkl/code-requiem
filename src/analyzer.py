@@ -697,7 +697,7 @@ def _print_report(m: dict) -> None:
     print(f"  健康分    {s['total']} / 100   → {scoring.MODE_LABELS[s['mode']]} · "
           f"{scoring.MODE_OUTPUTS[s['mode']]}")
     print("=" * 68)
-    for key, part in s["parts"].items():
+    for _key, part in s["parts"].items():
         bar_len = int(round(part["score"] / part["max"] * 20)) if part["max"] else 0
         bar = "█" * bar_len + "░" * (20 - bar_len)
         print(f"  {part['label']:<14} {bar} {part['score']:>2}/{part['max']:<2}  {part['detail']}")

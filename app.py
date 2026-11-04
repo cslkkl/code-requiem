@@ -949,7 +949,7 @@ def render_metric_cards(metrics: dict) -> None:
     cards = fmt.key_metrics(metrics)
     for start in (0, 4):
         columns = st.columns(4, gap="small")
-        for column, card in zip(columns, cards[start : start + 4]):
+        for column, card in zip(columns, cards[start : start + 4], strict=False):
             with column:
                 st.metric(
                     label=card["label"],

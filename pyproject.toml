@@ -21,7 +21,10 @@ exclude = [".venv", "docs"]
 [tool.ruff.lint]
 # E/F 是基础错误与未使用导入；I 是导入排序。
 select = ["E", "F", "I", "UP", "B"]
-ignore = ["E501"]  # 长中文注释与表格字符串不强行折行
+# E501: 长中文注释与表格字符串不强行折行
+# UP031: 生成层的中文 Markdown 模板用 % 拼接比 f-string 更易读、更易对齐，
+#        90 处改写收益低于风险，故忽略（见 .agents/notes/2026-11-05-ignore-up031.md）
+ignore = ["E501", "UP031"]
 
 [tool.ruff.lint.per-file-ignores]
 # 分析器需要在脚本模式与包模式下都能导入，显式 try/except 双导入
