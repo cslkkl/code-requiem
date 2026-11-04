@@ -78,6 +78,7 @@ def fetch_commits(owner: str, repo: str, *, max_pages: int = MAX_PAGES) -> list[
         except Exception:
             break
         if r.status_code != 200:
+            _note_status(r.status_code, r.text, r.headers)
             break
         try:
             data = r.json()
@@ -113,6 +114,7 @@ def repo_meta(owner: str, repo: str) -> dict | None:
     try:
         r = requests.get(f"{API}/repos/{owner}/{repo}", timeout=TIMEOUT, headers=_headers())
         if r.status_code != 200:
+            _note_status(r.status_code, r.text, r.headers)
             return None
         d = r.json()
     except Exception:

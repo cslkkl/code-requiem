@@ -281,13 +281,19 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
             if recent is not None and prev is not None:
                 hist["recent_6m"] = recent
                 hist["previous_6m"] = prev
+            # 只有 meta 存在时才用 created_at 覆盖 first；
+            # 但即使 meta 缺失，也要用 git 日志里的最早时间判断是否不足 12 个月
+            birth = None
             if repo_meta and repo_meta.get("created_at"):
                 try:
                     birth = datetime.fromisoformat(repo_meta["created_at"].replace("Z", "+00:00"))
-                    hist["first"] = birth
-                    hist["insufficient_history"] = (now - birth).days < 365
                 except Exception:
                     pass
+            if birth is not None:
+                hist["first"] = birth
+                hist["insufficient_history"] = (now - birth).days < 365
+            else:
+                hist["insufficient_history"] = (now - hist["first"]).days < 365
 
         if size_mb > gm.MAX_REPO_MB or hist["total_commits"] > 50000:
             sampled = True
@@ -348,16 +354,31 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
     if meta is None:
         # 分清「仓库真不存在」和「配额用完」——这两件事对用户的意义完全不同
         if github_api.RATE_LIMITED or fetch_api.RATE_LIMITED:
+            # 配额用完但 commits 可能还能拿到（如果之前缓存过）
+            commits = fetch_api.fetch_commits(owner, name)
+            if commits:
+                # 用 commits 里的最早时间作为 birth
+                meta = {"created_at": None, "pushed_at": None, "archived": False,
+                        "default_branch": "main", "size_kb": 0}
+            else:
+                return _empty_result(
+                    repo,
+                    _err("rate_limited", github_api.LAST_ERROR or ERROR_MESSAGES["rate_limited"]),
+                    time.perf_counter() - t0,
+                )
+        else:
+            # 检查是否是 rate limit（fetch_commits 里已经设置了 RATE_LIMITED）
+            if github_api.RATE_LIMITED or fetch_api.RATE_LIMITED:
+                return _empty_result(
+                    repo,
+                    _err("rate_limited", github_api.LAST_ERROR or ERROR_MESSAGES["rate_limited"]),
+                    time.perf_counter() - t0,
+                )
             return _empty_result(
                 repo,
-                _err("rate_limited", github_api.LAST_ERROR or ERROR_MESSAGES["rate_limited"]),
+                _err("not_found", "无法访问该仓库，请确认它是公开的，且地址没有拼错"),
                 time.perf_counter() - t0,
             )
-        return _empty_result(
-            repo,
-            _err("not_found", "无法访问该仓库，请确认它是公开的，且地址没有拼错"),
-            time.perf_counter() - t0,
-        )
     if meta.get("size_kb", 0) == 0 and not meta.get("pushed_at"):
         return _empty_result(repo, _err("empty"), time.perf_counter() - t0)
 
@@ -498,6 +519,7 @@ def _build_metrics(*, repo, now, hist, size, docs_info, risks_raw, stale,
     first = hist["first"]
     days_since = max(0, (now - last).days)
     age_days = max(0, (now - first).days)
+    span_days = max(0, (last - first).days)  # 享年 = 活跃期 = 最后提交 - 首次提交
 
     # ── 维度 1：最后提交距今 ───────────────────────────────────────────────
     s_last, d_last = scoring.score_last_commit(days_since)
@@ -571,9 +593,9 @@ def _build_metrics(*, repo, now, hist, size, docs_info, risks_raw, stale,
             "total_commits": hist["total_commits"],
             "analyzed_commits": hist["analyzed_commits"],
             "age_days": age_days,
-            "span_days": age_days,
+            "span_days": span_days,
             "days_since_last_commit": days_since,
-            "age_text": gm.human_age(age_days),
+            "age_text": gm.human_age(span_days),  # 享年 = 活跃期
             "last_commit_age_text": gm.human_age(days_since),
         },
         "size": {
