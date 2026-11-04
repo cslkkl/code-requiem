@@ -1,0 +1,43 @@
+# 代码安魂曲 / Code Requiem —— Streamlit 运行时与主题
+#
+# 视觉基调：深夜石室 / 碑铭。近黑底、石灰文字、做旧黄铜作为唯一强调色。
+# 不使用任何外部字体或 CDN —— 字体栈全部落在系统已装字体上，离线与
+# Hugging Face Spaces（Linux）两边都能退化为 monospace 代餐。
+
+[theme]
+base = "dark"
+primaryColor = "#C0A16B"            # 黄铜：分数环、链接、主按钮
+backgroundColor = "#0B0C0E"
+secondaryBackgroundColor = "#14171A"
+textColor = "#D8D5CD"               # 石灰白，不用纯白，降低刺眼
+linkColor = "#C0A16B"
+borderColor = "#262B30"
+codeBackgroundColor = "#101214"
+codeTextColor = "#C9C4B6"
+
+# 全站正文用系统无衬线（长文可读），标题与数字交给等宽字体做「碑刻」感。
+font = "'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif"
+headingFont = "'Consolas', 'Cascadia Mono', 'SFMono-Regular', 'DejaVu Sans Mono', ui-monospace, monospace"
+codeFont = "'Consolas', 'Cascadia Mono', 'SFMono-Regular', ui-monospace, monospace"
+
+baseFontSize = 15
+baseRadius = "3px"
+buttonRadius = "3px"
+showWidgetBorder = true
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#0C0E10"
+secondaryBackgroundColor = "#12161A"
+
+[server]
+headless = true
+fileWatcherType = "none"
+maxUploadSize = 5
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = true
