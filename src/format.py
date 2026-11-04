@@ -51,29 +51,37 @@ __all__ = [
 # 常量：模式 → 视觉与文案
 # ─────────────────────────────────────────────────────────────────────────────
 
+# 语义色：淡底 + 深字。tone 是用于**文字与细线**的深色，tone_soft 是用于**底块**的淡色。
+# 暖白主题下不能用大色块，所以 status_bg / status_ink 成对出现。
 MODE_META: dict[str, dict[str, str]] = {
     "alive": {
         "label": "存活",
         "doc": "代码遗嘱",
         "band": "70 – 100",
-        "tone": "#7FA98C",  # 苔绿
-        "tone_soft": "rgba(127,169,140,0.12)",
+        "tone": "#346538",  # 深苔绿（用于文字与分数环）
+        "tone_soft": "rgba(52,101,56,0.08)",
+        "status_bg": "#EDF3EC",
+        "status_ink": "#346538",
         "hint": "仍在呼吸：交接优先，悼词暂不触发。",
     },
     "critical": {
         "label": "承压",
         "doc": "临终关怀",
         "band": "30 – 69",
-        "tone": "#C9A44C",  # 旧铜
-        "tone_soft": "rgba(201,164,76,0.12)",
+        "tone": "#8A6209",  # 深琥珀
+        "tone_soft": "rgba(138,98,9,0.08)",
+        "status_bg": "#FBF3DB",
+        "status_ink": "#8A6209",
         "hint": "体征不稳：遗嘱 + 预演悼词同时输出。",
     },
     "dead": {
         "label": "已故",
         "doc": "项目悼词",
         "band": "0 – 29",
-        "tone": "#A8645F",  # 锈红
-        "tone_soft": "rgba(168,100,95,0.12)",
+        "tone": "#9F2F2D",  # 深砖红
+        "tone_soft": "rgba(159,47,45,0.08)",
+        "status_bg": "#FDEBEC",
+        "status_ink": "#9F2F2D",
         "hint": "已停止更新：只出具悼词，不再假设它会活。",
     },
 }
@@ -82,8 +90,10 @@ MODE_UNKNOWN: dict[str, str] = {
     "label": "未知",
     "doc": "文档",
     "band": "—",
-    "tone": "#8B8F8A",
-    "tone_soft": "rgba(139,143,138,0.12)",
+    "tone": "#787774",
+    "tone_soft": "rgba(120,119,116,0.08)",
+    "status_bg": "#F7F6F3",
+    "status_ink": "#787774",
     "hint": "健康分缺失。",
 }
 

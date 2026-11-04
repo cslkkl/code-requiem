@@ -1,34 +1,35 @@
 # 代码安魂曲 / Code Requiem —— Streamlit 运行时与主题
 #
-# 视觉基调：深夜石室 / 碑铭。近黑底、石灰文字、做旧黄铜作为唯一强调色。
-# 不使用任何外部字体或 CDN —— 字体栈全部落在系统已装字体上，离线与
-# Hugging Face Spaces（Linux）两边都能退化为 monospace 代餐。
+# 视觉基调：暖白极简 / 编辑排版。纸感底色、近黑文字、极细分隔线，
+# 语义色只用于状态徽章（存活 / 承压 / 已故），不做大面积上色。
+# 不使用任何外部字体或 CDN —— 字体栈全部落在系统已装字体上，
+# 离线与 Hugging Face Spaces（Linux）两边都能退化为系统默认可读字体。
 
 [theme]
-base = "dark"
-primaryColor = "#C0A16B"            # 黄铜：分数环、链接、主按钮
-backgroundColor = "#0B0C0E"
-secondaryBackgroundColor = "#14171A"
-textColor = "#D8D5CD"               # 石灰白，不用纯白，降低刺眼
-linkColor = "#C0A16B"
-borderColor = "#262B30"
-codeBackgroundColor = "#101214"
-codeTextColor = "#C9C4B6"
+base = "light"
+primaryColor = "#1A1A19"            # 主按钮与链接：近黑
+backgroundColor = "#FBFBFA"         # 画布：暖白，不是纯白
+secondaryBackgroundColor = "#F7F6F3"
+textColor = "#1A1A19"
+linkColor = "#8A7A5C"               # 旧铜，唯一强调色
+borderColor = "#E7E6E3"
+codeBackgroundColor = "#F7F6F3"
+codeTextColor = "#4A4A47"
 
-# 全站正文用系统无衬线（长文可读），标题与数字交给等宽字体做「碑刻」感。
-font = "'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif"
-headingFont = "'Consolas', 'Cascadia Mono', 'SFMono-Regular', 'DejaVu Sans Mono', ui-monospace, monospace"
-codeFont = "'Consolas', 'Cascadia Mono', 'SFMono-Regular', ui-monospace, monospace"
+# 正文系统无衬线（长文可读）；标题与数字交给衬线与等宽做编辑感。
+font = "'SF Pro Display','Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',system-ui,sans-serif"
+headingFont = "'Lyon Text','Newsreader','Source Han Serif SC','Songti SC','Noto Serif CJK SC',Georgia,serif"
+codeFont = "'SF Mono','Cascadia Mono','Consolas','DejaVu Sans Mono',ui-monospace,monospace"
 
-baseFontSize = 15
-baseRadius = "3px"
-buttonRadius = "3px"
+baseFontSize = 16
+baseRadius = "8px"
+buttonRadius = "8px"
 showWidgetBorder = true
 showSidebarBorder = true
 
 [theme.sidebar]
-backgroundColor = "#0C0E10"
-secondaryBackgroundColor = "#12161A"
+backgroundColor = "#F7F6F3"
+secondaryBackgroundColor = "#FFFFFF"
 
 [server]
 headless = true

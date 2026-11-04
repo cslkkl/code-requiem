@@ -1,0 +1,14 @@
+# 行尾统一为 LF —— 跨平台协作的格式契约。
+#
+# 为什么需要这个文件：Windows 上 Python 的文本模式写入会把 \n 翻成 CRLF，
+# 于是 docs/calibration.json 这类「由脚本生成」的文件天然是 CRLF，
+# 而手写源码是 LF，仓库里就出现混行。交给 git 统一比逐个 patch 生成脚本可靠。
+* text=auto eol=lf
+
+# 图片是二进制，不要做行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
