@@ -71,7 +71,7 @@ via the Hugging Face Inference API through an OpenAI-compatible endpoint. The mo
 receives no repo access and no authority over the score — its only job is turning
 a metrics table into prose.
 
-UI: Streamlit, deployed to Hugging Face Spaces with the token stored in Space Secrets.
+UI: Streamlit, deployed to Streamlit Community Cloud with the token stored in app Secrets.
 
 The dominant engineering cost was not the AI. It was making the thing never crash:
 empty repos, one-commit repos, private repos, dead registry APIs, rate limits,
@@ -140,7 +140,7 @@ death curve of a project rather than a single snapshot.
 **技术栈：**
 
 ```
-Python 3.12 · Streamlit · GitPython · Hugging Face Inference API（Qwen2.5-7B-Instruct）· Hugging Face Spaces
+Python 3.12 · Streamlit · GitPython · Hugging Face Inference API（Qwen2.5-7B-Instruct）· Streamlit Community Cloud
 ```
 
 ---
@@ -150,7 +150,7 @@ Python 3.12 · Streamlit · GitPython · Hugging Face Inference API（Qwen2.5-7B
 **Built with / Try it out 字段填：**
 
 ```
-[HF_SPACE_URL]
+https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app
 ```
 
 > 提交前替换为真实的 Hugging Face Spaces 公开地址，形如
@@ -179,7 +179,7 @@ One model, one job.
 - Provider: Hugging Face Inference API (OpenAI-compatible router endpoint,
   https://router.huggingface.co/v1/chat/completions)
 - Model: Qwen/Qwen2.5-7B-Instruct, by the Qwen team, Apache-2.0 licensed
-- Auth: a Hugging Face Read token, stored only in the Space's Secrets as HF_TOKEN
+- Auth: a Hugging Face Read token, stored only in the app's Secrets as HF_TOKEN
 
 The model receives a single JSON object containing already-computed metrics —
 score total, six dimension scores, bus factor, top contributors with commit
@@ -244,7 +244,7 @@ https://github.com/cslkkl/code-requiem
 ```
 Public repository, MIT licensed. Contains no API keys, tokens, or credentials —
 all secrets are injected as environment variables and, in production, through
-Hugging Face Spaces Secrets (HF_TOKEN).
+Streamlit Cloud Secrets (GITHUB_TOKEN, HF_TOKEN).
 
 Structure:
   app.py                 Streamlit entry point
@@ -289,7 +289,7 @@ Code Requiem — 90 seconds from repo URL to handover document
            "if this person leaves, the project ends." That is the handover risk
            you cannot see from a README.
 1:15–1:30  Close: deterministic score, AI wording, degrade gracefully. Try it:
-           [HF_SPACE_URL]
+           https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app
 
 Subtitles are burned in, bilingual (Chinese primary, English secondary).
 Recorded at 1080p with OBS; full shot list in docs/DEMO.md.
@@ -402,7 +402,7 @@ metrics into narrative text and has no influence on the score.
 | # | 项 | 检查 |
 |---|---|---|
 | 1 | 标题与描述 | 中英双版齐全，价值主张落在交接 / bus factor |
-| 2 | 可运行原型 | `[HF_SPACE_URL]` 已替换，无痕窗口能直接打开 |
+| 2 | 可运行原型 | `https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app` 已替换，无痕窗口能直接打开 |
 | 3 | AI 实现说明 | 写明 HF Inference + Qwen2.5-7B-Instruct，写明分析层零 AI，写明降级 |
 | 4 | 源代码 | 链接可访问，仓库无任何 key |
 | 5 | 演示视频 | 60–90 秒，两段连续分析，字幕烧进画面 |

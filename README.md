@@ -4,8 +4,12 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.66-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-FFD21E)](https://huggingface.co/spaces)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
+**在线试用** → <https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app>
+
+> 打开即用，不需要注册、不需要粘贴任何密钥。第一次分析约 10-60 秒。
 
 **这是给「接手别人代码」的人用的工具，不是给怀念项目的人用的玩具。**
 

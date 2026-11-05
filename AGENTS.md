@@ -55,11 +55,12 @@ git -c "http.https://github.com/.proxy=" push origin main
 
 ## 待办
 
-- [ ] 线上部署（**HF Spaces 免费版已不可用**：streamlit SDK 被移除、gradio/docker 需 PRO 订阅。改走 Streamlit Community Cloud，步骤见 [docs/DEPLOY.md](docs/DEPLOY.md)）
+- [x] 线上部署 → <https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app>（Streamlit Community Cloud）
+- [ ] 线上 Secrets 待配：`GITHUB_TOKEN`（必需，否则 60 次/小时）、`HF_TOKEN`（可选，AI 叙事）
 - [x] 90 秒 SLA（加 `BUDGET_SEC=75` 全局预算）
 - [x] 界面截图（4 张，docs/screenshots/）
 - [ ] 60-90 秒演示视频
-- [ ] Devpost 七项提交（`docs/DEVPOST.md` 已备好，`[HF_SPACE_URL]` 待填）
+- [ ] Devpost 七项提交（`docs/DEVPOST.md` 已填真实地址，待上传视频）
 
 ## 活跃坑
 
