@@ -293,15 +293,19 @@ DEMO_NARRATIVE: dict = {
 
 _CSS = """
 <style>
-/* 代码安魂曲：纸质检验报告。线条、留白、字重构成层级；不使用卡片。 */
+/* 代码安魂曲：一份放在桌面上的检验报告。
+   桌面是灰的，纸是白的，内容全部装在纸里；
+   章节有编号，规格表用竖线分格 —— 它看起来应该像一份打印出来的文档，
+   而不是一个网页仪表盘。 */
 :root{
-  --req-paper:#F7F7F5;
-  --req-ink:#171716;
-  --req-ink-2:#3F3F3C;
-  --req-ink-3:#62625E;
-  --req-ink-4:#6B6B65;
-  --req-rule:#D8D8D3;
-  --req-rule-2:#E6E6E1;
+  --req-desk:#E9E9E6;        /* 桌面 */
+  --req-paper:#FDFDFC;       /* 纸张 */
+  --req-ink:#1B1A17;
+  --req-ink-2:#42413D;
+  --req-ink-3:#66655F;
+  --req-ink-4:#77756E;
+  --req-rule:#DCDCD6;
+  --req-rule-2:#E9E9E4;
   --req-accent:#8A3324;
   --req-ok:#2F5D3A;
   --req-warn:#78520D;
@@ -309,31 +313,43 @@ _CSS = """
   --req-sans:'Geist',system-ui,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC','WenQuanYi Micro Hei',sans-serif;
   --req-mono:'Geist Mono',ui-monospace,'Cascadia Mono','JetBrains Mono','SF Mono',Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;
 }
-.stApp{background:var(--req-paper);font-synthesis-weight:none;}
+.stApp{background:var(--req-desk);font-synthesis-weight:none;}
 html,body,[class*="css"]{font-family:var(--req-sans);color:var(--req-ink);-webkit-font-smoothing:antialiased;}
 [data-testid="stHeader"]{height:0;background:transparent;}
 [data-testid="stToolbar"],footer,#MainMenu{display:none;}
-.block-container{max-width:1220px;padding:2.4rem 2.6rem 6rem;}
+.block-container{max-width:1240px;padding:2.6rem 2.8rem 6rem;}
 [data-testid="stMain"] .stVerticalBlock{gap:0;}
 ::selection{background:var(--req-ink);color:var(--req-paper);}
 a{color:var(--req-accent);text-decoration:none;}
 a:hover{text-decoration:underline;}
 [data-testid="stMarkdownContainer"] p{font-size:.95rem;line-height:1.78;color:var(--req-ink-2);}
-[data-testid="stMarkdownContainer"] h1,[data-testid="stMarkdownContainer"] h2,[data-testid="stMarkdownContainer"] h3{color:var(--req-ink);letter-spacing:-.018em;}
 [data-testid="stMarkdownContainer"] code{font-family:var(--req-mono);font-size:.86em;background:var(--req-rule-2);padding:1px 4px;border-radius:0;}
 [data-testid="stMarkdownContainer"] ul,[data-testid="stMarkdownContainer"] ol{padding-left:1.25rem;}
 [data-testid="stMarkdownContainer"] li{font-size:.92rem;line-height:1.76;color:var(--req-ink-2);margin-bottom:4px;}
 [data-testid="stMarkdownContainer"] hr{border:0;border-top:1px solid var(--req-rule);}
-[data-testid="stCaptionContainer"],[data-testid="stCaptionContainer"] p{font-family:var(--req-mono);font-size:.72rem;color:var(--req-ink-3);}
+[data-testid="stCaptionContainer"],[data-testid="stCaptionContainer"] p{font-size:.74rem;color:var(--req-ink-3);}
 
-/* 报告抬头 */
-.req-mast{display:flex;align-items:baseline;gap:16px;padding-bottom:14px;border-bottom:1.5px solid var(--req-ink);margin-bottom:32px;}
-.req-mast__title{font-family:var(--req-sans);font-size:1.68rem;font-weight:700;letter-spacing:-.045em;line-height:1;margin:0;color:var(--req-ink);}
-.req-mast__title span{color:var(--req-ink);}
+/* ── 纸张：所有内容装进来 ─────────────────────────────────────────────── */
+.st-key-sheet{
+  max-width:940px;margin:0 auto 3rem;
+  background:var(--req-paper);
+  border:1px solid var(--req-rule);
+  padding:0 0 34px;
+}
+.st-key-sheet{padding-left:58px;padding-right:58px;}
+
+/* ── 报告抬头：印在纸上沿 ─────────────────────────────────────────────── */
+.req-mast{
+  display:flex;align-items:baseline;gap:16px;
+  padding:46px 0 14px;margin-bottom:0;
+  border-bottom:1.5px solid var(--req-ink);
+}
+.req-mast__title{font-size:1.62rem;font-weight:700;letter-spacing:-.045em;line-height:1;margin:0;color:var(--req-ink);}
 .req-mast__latin{font-family:var(--req-mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--req-ink-4);}
 .req-mast__note{margin-left:auto;font-family:var(--req-mono);font-size:.7rem;color:var(--req-ink-3);}
 
-/* 输入与按钮 */
+/* ── 输入区：纸内第一格 ───────────────────────────────────────────────── */
+.req-inputzone{padding:20px 0 6px;}
 [data-testid="stForm"]{border:0 !important;padding:0 !important;}
 [data-testid="stTextInput"] > div{border:0 !important;background:transparent !important;}
 [data-testid="stTextInput"] label{display:none;}
@@ -342,7 +358,7 @@ a:hover{text-decoration:underline;}
 [data-testid="stTextInput"] input::placeholder{color:var(--req-ink-4) !important;}
 button[data-testid^="stBaseButton"]{font-family:var(--req-mono) !important;font-size:.78rem !important;letter-spacing:.035em !important;border-radius:0 !important;box-shadow:none !important;transition:background .12s,color .12s,border-color .12s;}
 button[data-testid^="stBaseButton"] p,button[data-testid^="stBaseButton"] span,button[data-testid^="stBaseButton"] div{color:inherit !important;font-size:inherit !important;line-height:1.4 !important;margin:0 !important;}
-button[data-testid="stBaseButton-primaryFormSubmit"],button[data-testid="stBaseButton-primary"]{background:var(--req-ink) !important;color:var(--req-paper) !important;border:1.5px solid var(--req-ink) !important;padding:11px 22px !important;}
+button[data-testid="stBaseButton-primaryFormSubmit"],button[data-testid="stBaseButton-primary"]{background:var(--req-ink) !important;color:var(--req-paper) !important;border:1.5px solid var(--req-ink) !important;padding:11px 24px !important;}
 button[data-testid="stBaseButton-primaryFormSubmit"]:hover,button[data-testid="stBaseButton-primary"]:hover{background:var(--req-accent) !important;border-color:var(--req-accent) !important;color:var(--req-paper) !important;}
 button[data-testid^="stBaseButton"]:active{transform:translateY(1px);}
 button[data-testid^="stBaseButton"]:focus-visible{outline:2px solid var(--req-accent) !important;outline-offset:2px;}
@@ -350,93 +366,100 @@ button[data-testid^="stBaseButton"]:focus-visible{outline:2px solid var(--req-ac
 [data-testid="stDownloadButton"] button:hover,[data-testid="stBaseButton-secondary"]:hover{border-color:var(--req-ink) !important;color:var(--req-accent) !important;background:transparent !important;}
 .req-hint{font-family:var(--req-sans);font-size:.74rem;line-height:1.65;color:var(--req-ink-3);}
 
-/* 侧栏 */
-[data-testid="stSidebar"]{background:var(--req-paper);border-right:1px solid var(--req-rule);}
-[data-testid="stSidebar"] > div:first-child{padding-top:2rem;}
-[data-testid="stSidebar"] .block-container{padding-left:1.35rem;padding-right:1.35rem;}
+/* ── 侧栏：桌面上的一列批注，无框 ─────────────────────────────────────── */
+[data-testid="stSidebar"]{background:var(--req-desk);border-right:0;}
+[data-testid="stSidebar"] > div:first-child{padding-top:2.2rem;}
+[data-testid="stSidebar"] .block-container{padding-left:1.6rem;padding-right:1.6rem;}
 .req-side__title{font-family:var(--req-mono);font-size:.68rem;letter-spacing:.17em;text-transform:uppercase;color:var(--req-ink);padding-bottom:10px;border-bottom:1.5px solid var(--req-ink);margin-bottom:16px;}
 .req-side__desc{font-size:.85rem;line-height:1.76;color:var(--req-ink-2);margin-bottom:26px;}
 .req-side__desc b{font-weight:650;color:var(--req-ink);}
-.req-side__tag{font-family:var(--req-sans);font-size:.7rem;font-weight:600;letter-spacing:0;color:var(--req-ink-4);padding-bottom:7px;border-bottom:1px solid var(--req-rule);margin:0 0 10px;}
+.req-side__tag{font-family:var(--req-sans);font-size:.7rem;font-weight:600;color:var(--req-ink);padding-bottom:8px;border-bottom:1px solid var(--req-rule);margin:0 0 10px;}
 [data-testid="stSidebar"] button[data-testid^="stBaseButton"]{width:100% !important;text-align:left !important;justify-content:flex-start !important;font-family:var(--req-mono) !important;font-size:.76rem !important;background:transparent !important;color:var(--req-ink-2) !important;border:0 !important;border-bottom:1px solid var(--req-rule-2) !important;padding:8px 0 !important;box-shadow:none !important;}
 [data-testid="stSidebar"] button[data-testid^="stBaseButton"]:hover{background:transparent !important;color:var(--req-accent) !important;border-bottom-color:var(--req-accent) !important;}
-.req-ex__note{font-family:var(--req-sans);font-size:.72rem;line-height:1.6;color:var(--req-ink-3);margin:2px 0 14px;}
-.req-pill{display:inline-block !important;font-family:var(--req-mono);font-size:.68rem;line-height:1.55;letter-spacing:.01em;padding:3px 0;margin-bottom:3px;border:0 !important;background:transparent !important;}
+.req-ex__note{font-size:.72rem;line-height:1.6;color:var(--req-ink-3);margin:2px 0 14px;}
+.req-pill{display:inline-block !important;font-family:var(--req-mono);font-size:.68rem;line-height:1.55;padding:3px 0;margin-bottom:3px;border:0 !important;background:transparent !important;}
 .req-pill__dot{display:inline-block;width:5px;height:5px;margin-right:7px;vertical-align:middle;background:currentColor;}
-.req-side__meta{font-family:var(--req-sans);font-size:.72rem;line-height:1.65;color:var(--req-ink-3);word-break:break-word;margin-bottom:20px;}
+.req-side__meta{font-size:.74rem;line-height:1.65;color:var(--req-ink-3);word-break:break-word;margin-bottom:20px;}
 
-/* 空状态 */
-.req-empty{border-top:1px solid var(--req-rule);padding:42px 0 34px;max-width:68ch;}
+/* ── 封面（空状态）：纸的第一页 ───────────────────────────────────────── */
+.req-empty{padding:56px 0 40px;}
 .req-empty__glyph{display:none;}
-.req-empty__title{font-size:1.08rem;font-weight:700;letter-spacing:-.02em;color:var(--req-ink);margin-bottom:12px;}
-.req-empty__detail{font-size:.92rem;line-height:1.8;color:var(--req-ink-3);}
+.req-empty__title{font-size:1.35rem;font-weight:700;letter-spacing:-.028em;color:var(--req-ink);margin-bottom:14px;}
+.req-empty__detail{font-size:.95rem;line-height:1.85;color:var(--req-ink-2);max-width:52ch;}
 .req-empty__detail b{font-weight:650;color:var(--req-ink);}
-.req-legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:22px;padding-top:13px;border-top:1px solid var(--req-rule-2);}
-.req-legend__item{font-family:var(--req-mono);font-size:.68rem;color:var(--req-ink-3);white-space:nowrap;}
-.req-legend__bar{display:inline-block;width:15px;height:2px;margin-right:7px;vertical-align:middle;}
-.req-legend__range{color:var(--req-ink-4);}
+.req-legend{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:34px;padding-top:18px;border-top:1px solid var(--req-rule);}
+.req-legend__item{font-size:.78rem;color:var(--req-ink-2);white-space:nowrap;}
+.req-legend__bar{display:inline-block;width:16px;height:2px;margin-right:8px;vertical-align:middle;}
+.req-legend__range{color:var(--req-ink-3);}
 
-/* 检验结果抬头 */
-.req-hero{display:grid;grid-template-columns:150px minmax(0,1fr);gap:0 42px;border-top:1.5px solid var(--req-ink);border-bottom:1px solid var(--req-rule);padding:28px 0 24px;}
-.req-hero__scorewrap{display:flex;flex-direction:column;justify-content:flex-end;}
-.req-hero__score{font-family:var(--req-mono);font-size:5.1rem;font-weight:600;line-height:.86;letter-spacing:-.06em;color:var(--req-ink);font-variant-numeric:tabular-nums;}
+/* ── 检验结果抬头：分数格 | 竖线 | 内容格 ─────────────────────────────── */
+.req-hero{display:grid;grid-template-columns:172px minmax(0,1fr);border-bottom:1px solid var(--req-rule);}
+.req-hero__scorewrap{display:flex;flex-direction:column;justify-content:flex-end;border-right:1px solid var(--req-rule);padding:30px 30px 26px 0;}
+.req-hero__score{font-family:var(--req-mono);font-size:5.4rem;font-weight:600;line-height:.84;letter-spacing:-.06em;color:var(--req-ink);font-variant-numeric:tabular-nums;}
 .req-hero__score.is-bad{color:var(--req-bad);}
 .req-hero__score.is-warn{color:var(--req-warn);}
-.req-hero__denom{display:block;margin-top:10px;font-family:var(--req-mono);font-size:.72rem;letter-spacing:.06em;color:var(--req-ink-4);}
-.req-hero__body{min-width:0;padding-top:2px;}
-.req-hero__repo{font-size:1.25rem;font-weight:700;line-height:1.25;letter-spacing:-.025em;color:var(--req-ink);margin-bottom:7px;word-break:break-word;}
+.req-hero__denom{display:block;margin-top:12px;font-family:var(--req-mono);font-size:.72rem;letter-spacing:.06em;color:var(--req-ink-4);}
+.req-hero__body{min-width:0;padding:30px 0 26px 40px;}
+.req-hero__repo{font-size:1.3rem;font-weight:700;line-height:1.25;letter-spacing:-.025em;color:var(--req-ink);margin-bottom:8px;word-break:break-word;}
 .req-hero__repo a{color:inherit;}
-.req-hero__state{font-family:var(--req-sans);font-size:.75rem;font-weight:600;letter-spacing:0;margin-bottom:12px;}
-.req-hero__verdict{font-size:.96rem;line-height:1.76;color:var(--req-ink-2);max-width:66ch;margin:0 0 18px;}
-.req-hero__foot{font-family:var(--req-mono);font-size:.66rem;line-height:1.65;letter-spacing:.01em;color:var(--req-ink-3);margin-top:13px;}
-.req-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--req-rule-2);}
-.req-fact{padding:9px 12px 8px 0;border-bottom:1px solid var(--req-rule-2);}
-.req-fact__k{font-family:var(--req-sans);font-size:.7rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--req-ink-4);margin-bottom:3px;}
-.req-fact__v{font-family:var(--req-mono);font-size:.84rem;color:var(--req-ink);font-variant-numeric:tabular-nums;}
+.req-hero__state{font-family:var(--req-sans);font-size:.76rem;font-weight:600;margin-bottom:13px;}
+.req-hero__verdict{font-size:.97rem;line-height:1.78;color:var(--req-ink-2);max-width:60ch;margin:0 0 20px;}
+.req-hero__foot{font-family:var(--req-mono);font-size:.66rem;line-height:1.65;color:var(--req-ink-3);margin-top:15px;}
 
-/* 章节与答案 */
-.req-sec{display:flex;align-items:baseline;gap:14px;margin:46px 0 0;padding-bottom:9px;border-bottom:1.5px solid var(--req-ink);}
-.req-sec__label{font-size:1rem;font-weight:700;letter-spacing:-.015em;color:var(--req-ink);}
-.req-sec__hint{margin-left:auto;font-family:var(--req-sans);font-size:.74rem;line-height:1.5;color:var(--req-ink-3);text-align:right;}
+/* 规格表：竖线分格，无横线堆叠 */
+.req-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+.req-fact{padding:2px 18px 2px 0;border-left:1px solid var(--req-rule-2);}
+.req-fact:nth-child(3n+1){border-left:0;padding-left:0;}
+.req-fact:nth-child(n+4){padding-top:12px;}
+.req-fact__k{font-size:.7rem;font-weight:500;color:var(--req-ink-3);margin-bottom:4px;}
+.req-fact__v{font-family:var(--req-mono);font-size:.86rem;color:var(--req-ink);font-variant-numeric:tabular-nums;}
+
+/* ── 章节：编号 + 标题，右侧批注 ──────────────────────────────────────── */
+.req-sec{display:flex;align-items:baseline;gap:14px;margin:48px 0 0;padding-bottom:10px;border-bottom:1.5px solid var(--req-ink);}
+.req-sec__num{font-family:var(--req-mono);font-size:.74rem;color:var(--req-accent);font-variant-numeric:tabular-nums;}
+.req-sec__label{font-size:1.04rem;font-weight:700;letter-spacing:-.015em;color:var(--req-ink);}
+.req-sec__hint{margin-left:auto;font-size:.74rem;line-height:1.5;color:var(--req-ink-3);text-align:right;}
+
+/* ── 三个问题 ─────────────────────────────────────────────────────────── */
 .req-answers{border-bottom:1px solid var(--req-rule);}
-.req-answer{display:grid;grid-template-columns:34px minmax(0,1fr);gap:0 16px;padding:21px 0 20px;border-top:1px solid var(--req-rule-2);}
+.req-answer{display:grid;grid-template-columns:36px minmax(0,1fr);gap:0 18px;padding:22px 0 21px;border-top:1px solid var(--req-rule-2);}
 .req-answer:first-child{border-top:0;}
-.req-answer__n{font-family:var(--req-mono);font-size:.72rem;color:var(--req-ink-4);padding-top:3px;font-variant-numeric:tabular-nums;}
+.req-answer__n{font-family:var(--req-mono);font-size:.72rem;color:var(--req-ink-4);padding-top:4px;font-variant-numeric:tabular-nums;}
 .req-answer__q{font-size:.9rem;font-weight:650;color:var(--req-ink);margin-bottom:6px;}
-.req-answer__a{font-size:1.12rem;font-weight:700;line-height:1.4;letter-spacing:-.018em;color:var(--req-ink);margin-bottom:7px;}
+.req-answer__a{font-size:1.14rem;font-weight:700;line-height:1.4;letter-spacing:-.018em;color:var(--req-ink);margin-bottom:8px;}
 .req-answer__a.is-ok{color:var(--req-ok);}
 .req-answer__a.is-warn{color:var(--req-warn);}
 .req-answer__a.is-bad{color:var(--req-bad);}
-.req-answer__d{font-size:.89rem;line-height:1.78;color:var(--req-ink-2);max-width:70ch;}
+.req-answer__d{font-size:.89rem;line-height:1.78;color:var(--req-ink-2);max-width:66ch;}
 
-/* 六维 */
+/* ── 六维 ─────────────────────────────────────────────────────────────── */
 .req-dims{border-bottom:1px solid var(--req-rule);}
-.req-dim{display:block;padding:17px 0 16px;border-top:1px solid var(--req-rule-2);}
+.req-dim{display:block;padding:18px 0 17px;border-top:1px solid var(--req-rule-2);}
 .req-dim:first-child{border-top:0;}
-.req-dim__top{display:flex;align-items:baseline;gap:9px;margin-bottom:8px;}
+.req-dim__top{display:flex;align-items:baseline;gap:9px;margin-bottom:9px;}
 .req-dim__name{font-size:.95rem;font-weight:650;letter-spacing:-.008em;color:var(--req-ink);}
 .req-dim__term{font-family:var(--req-mono);font-size:.66rem;font-style:normal;color:var(--req-ink-4);}
 .req-dim__score{margin-left:auto;font-family:var(--req-mono);font-size:.9rem;font-weight:600;font-variant-numeric:tabular-nums;}
 .req-dim__score i{font-style:normal;font-size:.68rem;color:var(--req-ink-4);font-weight:400;}
 .req-dim__track{height:2px;background:var(--req-rule-2);margin-bottom:10px;overflow:hidden;}
 .req-dim__fill{height:100%;}
-.req-dim__detail{font-size:.86rem;line-height:1.74;color:var(--req-ink-2);max-width:78ch;}
-.req-dims__note{font-family:var(--req-mono);font-size:.66rem;color:var(--req-ink-3);padding-top:9px;}
+.req-dim__detail{font-size:.87rem;line-height:1.74;color:var(--req-ink-2);max-width:76ch;}
 
-/* 次要指标 */
+/* ── 次要指标 ─────────────────────────────────────────────────────────── */
+.st-key-metricgrid{padding:14px 0 4px;}
 [data-testid="stMetric"]{padding:0;border:0 !important;background:transparent !important;}
-[data-testid="stMetricLabel"] p{font-family:var(--req-mono) !important;font-size:.62rem !important;letter-spacing:.08em !important;color:var(--req-ink-3) !important;text-transform:uppercase;}
+[data-testid="stMetricLabel"] p{font-size:.7rem !important;color:var(--req-ink-3) !important;}
 [data-testid="stMetricValue"]{font-family:var(--req-mono) !important;font-size:1.02rem !important;font-weight:600 !important;color:var(--req-ink) !important;font-variant-numeric:tabular-nums;}
-[data-testid="stMetricDelta"]{font-family:var(--req-mono);font-size:.66rem;color:var(--req-ink-3) !important;}
+[data-testid="stMetricDelta"]{font-size:.7rem;color:var(--req-ink-3) !important;}
 
-/* 折叠附录 */
-[data-testid="stExpander"]{border:0 !important;border-top:1px solid var(--req-rule) !important;border-bottom:1px solid var(--req-rule) !important;border-radius:0 !important;background:transparent !important;margin:16px 0 0 !important;}
+/* ── 折叠附录 ─────────────────────────────────────────────────────────── */
+[data-testid="stExpander"]{border:0 !important;border-top:1px solid var(--req-rule) !important;border-bottom:1px solid var(--req-rule) !important;border-radius:0 !important;background:transparent !important;margin:18px 0 0 !important;}
 [data-testid="stExpander"] details{border:0 !important;}
-[data-testid="stExpander"] summary{font-family:var(--req-mono) !important;font-size:.75rem !important;color:var(--req-ink-2) !important;padding:11px 2px !important;}
+[data-testid="stExpander"] summary{font-family:var(--req-mono) !important;font-size:.75rem !important;color:var(--req-ink-2) !important;padding:12px 2px !important;}
 [data-testid="stExpander"] summary:hover{color:var(--req-accent) !important;}
 [data-testid="stExpanderDetails"]{border-top:1px solid var(--req-rule-2) !important;padding:8px 2px 10px !important;}
 
-/* 提示 */
+/* ── 提示 ─────────────────────────────────────────────────────────────── */
 .req-notice{font-size:.87rem;line-height:1.74;color:var(--req-ink-2);padding:12px 0 12px 15px;margin:14px 0;border-left:2px solid var(--req-ink-4);background:transparent;}
 .req-notice__tag{display:inline-block;margin-right:9px;font-family:var(--req-mono);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--req-ink);}
 .req-notice code{font-family:var(--req-mono);font-size:.86em;background:var(--req-rule-2);padding:1px 4px;}
@@ -445,32 +468,31 @@ button[data-testid^="stBaseButton"]:focus-visible{outline:2px solid var(--req-ac
 .req-notice--ok{border-left-color:var(--req-ok);}
 .req-notice--ghost{border-left-color:var(--req-rule);}
 
-/* 文档 */
+/* ── 文档 ─────────────────────────────────────────────────────────────── */
 .req-doc-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:0 0 10px;border-bottom:1px solid var(--req-rule);margin-bottom:22px;}
-.req-doc-head__kicker{font-family:var(--req-sans);font-size:.72rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--req-ink-4);}
+.req-doc-head__kicker{font-size:.72rem;font-weight:500;color:var(--req-ink-3);}
 .req-doc-head__title{font-size:.92rem;font-weight:700;letter-spacing:-.01em;color:var(--req-ink);}
-.req-doc-head__meta{margin-left:auto;font-family:var(--req-sans);font-size:.72rem;color:var(--req-ink-3);}
+.req-doc-head__meta{margin-left:auto;font-size:.72rem;color:var(--req-ink-3);}
 .st-key-docbody{max-width:82ch;font-size:.93rem;line-height:1.84;color:var(--req-ink-2);}
-.st-key-docbody h1{font-family:var(--req-sans);font-size:1.22rem;font-weight:700;letter-spacing:-.025em;line-height:1.35;color:var(--req-ink);margin:0 0 18px;}
-.st-key-docbody h2{font-family:var(--req-sans);font-size:1rem;font-weight:700;letter-spacing:-.015em;color:var(--req-ink);margin:30px 0 11px;padding-bottom:7px;border-bottom:1px solid var(--req-rule-2);}
+.st-key-docbody h1{font-size:1.24rem;font-weight:700;letter-spacing:-.025em;line-height:1.35;color:var(--req-ink);margin:0 0 18px;}
+.st-key-docbody h2{font-size:1rem;font-weight:700;letter-spacing:-.015em;color:var(--req-ink);margin:30px 0 11px;padding-bottom:7px;border-bottom:1px solid var(--req-rule-2);}
 .st-key-docbody h3{font-size:.94rem;font-weight:650;color:var(--req-ink);margin:20px 0 7px;}
 .st-key-docbody p{margin:0 0 12px;line-height:1.84;}
 .st-key-docbody ul,.st-key-docbody ol{margin:0 0 14px;padding-left:1.3rem;}
 .st-key-docbody li{margin-bottom:6px;line-height:1.8;}
 .st-key-docbody strong{color:var(--req-ink);font-weight:650;}
 .st-key-docbody blockquote{margin:14px 0;padding:4px 0 4px 15px;border-left:2px solid var(--req-rule);color:var(--req-ink-3);}
-.st-key-doc_actions{margin-top:20px;padding-top:12px;border-top:1px solid var(--req-rule-2);}
-.req-foot{margin-top:52px;padding-top:13px;border-top:1.5px solid var(--req-ink);font-family:var(--req-sans);font-size:.72rem;line-height:1.65;color:var(--req-ink-3);display:flex;gap:18px;flex-wrap:wrap;}
 .st-key-docbody table{width:100%;border-collapse:collapse;margin:15px 0;font-size:.86rem;}
 .st-key-docbody th{font-family:var(--req-mono);font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--req-ink-3);font-weight:500;text-align:left;padding:7px 10px 7px 0;border-bottom:1.5px solid var(--req-rule);}
 .st-key-docbody td{padding:8px 10px 8px 0;border-bottom:1px solid var(--req-rule-2);color:var(--req-ink-2);vertical-align:top;}
+.st-key-doc_actions{margin-top:22px;padding-top:13px;border-top:1px solid var(--req-rule-2);}
 
-/* 解剖面板与表格 */
+/* ── 解剖附录 ─────────────────────────────────────────────────────────── */
 [data-testid="stTabs"] [data-baseweb="tab-list"]{gap:0;border-bottom:1.5px solid var(--req-ink);background:transparent;}
 [data-testid="stTabs"] [data-baseweb="tab"]{font-family:var(--req-mono);font-size:.74rem;color:var(--req-ink-3);background:transparent;border:0;border-radius:0;padding:9px 18px 9px 0;}
 [data-testid="stTabs"] [aria-selected="true"]{color:var(--req-ink) !important;font-weight:600;border-bottom:2px solid var(--req-accent) !important;}
-[data-testid="stTabs"] [data-baseweb="tab-panel"]{background:transparent !important;border:0 !important;padding:16px 0 0 !important;}
 [data-testid="stTabs"] [data-baseweb="tab-highlight"],[data-testid="stTabs"] [data-baseweb="tab-border"]{display:none;}
+[data-testid="stTabs"] [data-baseweb="tab-panel"]{background:transparent !important;border:0 !important;padding:16px 0 0 !important;}
 .req-table{width:100%;border-collapse:collapse;font-size:.85rem;}
 .req-table th{font-family:var(--req-mono);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;text-align:left;color:var(--req-ink-3);padding:9px 12px 9px 0;border-bottom:1.5px solid var(--req-ink);}
 .req-table td{padding:10px 12px 10px 0;border-bottom:1px solid var(--req-rule-2);color:var(--req-ink-2);vertical-align:top;line-height:1.68;}
@@ -480,20 +502,28 @@ button[data-testid^="stBaseButton"]:focus-visible{outline:2px solid var(--req-ac
 [data-testid="stDataFrame"],[data-testid="stJson"]{border:0 !important;border-radius:0 !important;background:transparent !important;}
 [data-testid="stJson"] pre{white-space:pre-wrap !important;overflow-wrap:anywhere !important;}
 
-/* 加载 */
+/* ── 页脚：纸内最底一行 ───────────────────────────────────────────────── */
+.req-foot{margin:44px 0 6px;padding-top:14px;border-top:1.5px solid var(--req-ink);font-size:.72rem;line-height:1.65;color:var(--req-ink-3);display:flex;gap:18px;flex-wrap:wrap;}
+
+/* ── 加载 ─────────────────────────────────────────────────────────────── */
 [data-testid="stStatusWidget"]{font-family:var(--req-mono) !important;font-size:.74rem !important;color:var(--req-ink-3) !important;}
 [data-testid="stStatusWidget"] details{border:0 !important;border-top:1px solid var(--req-rule) !important;border-bottom:1px solid var(--req-rule) !important;border-radius:0 !important;background:transparent !important;}
 [data-testid="stStatusWidget"] summary{border-radius:0 !important;}
 .stSpinner>div{border-color:var(--req-ink-4) transparent transparent transparent !important;}
 [data-testid="stProgress"] > div > div > div{background:var(--req-ink) !important;}
 
-@media (max-width:760px){
+@media (max-width:820px){
   .block-container{padding:1.6rem 1.15rem 4rem;}
-  .req-mast{flex-wrap:wrap;gap:7px 12px;}
+  .st-key-sheet .block-container{padding:0 24px 26px;}
+  .req-mast{flex-wrap:wrap;gap:7px 12px;padding-top:34px;}
   .req-mast__note{margin-left:0;width:100%;}
-  .req-hero{grid-template-columns:1fr;gap:18px 0;}
-  .req-hero__score{font-size:3.8rem;}
+  .req-hero{grid-template-columns:1fr;}
+  .req-hero__scorewrap{border-right:0;border-bottom:1px solid var(--req-rule);padding:24px 0 20px;}
+  .req-hero__body{padding:22px 0 24px;}
+  .req-hero__score{font-size:4rem;}
   .req-facts{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .req-fact:nth-child(3n+1){border-left:1px solid var(--req-rule-2);padding-left:14px;}
+  .req-fact:nth-child(2n+1){border-left:0;padding-left:0;}
   .req-sec__hint{display:none;}
   .req-doc-head__meta{margin-left:0;width:100%;}
 }
@@ -522,11 +552,12 @@ def notice(tag: str, body: str, kind: str = "") -> str:
     return f'<div class="{cls}"><span class="req-notice__tag">{esc(tag)}</span>{body}</div>'
 
 
-def section(label: str, hint: str = "") -> None:
+def section(num: str, label: str, hint: str = "") -> None:
+    """章节标题：编号（氧化红等宽）+ 标题 + 右侧批注。"""
     hint_html = f'<span class="req-sec__hint">{esc(hint)}</span>' if hint else ""
     st.markdown(
-        f'<div class="req-sec"><span class="req-sec__label">{esc(label)}</span>'
-        f'<span class="req-sec__rule"></span>{hint_html}</div>',
+        f'<div class="req-sec"><span class="req-sec__num">{esc(num)}</span>'
+        f'<span class="req-sec__label">{esc(label)}</span>{hint_html}</div>',
         unsafe_allow_html=True,
     )
 
@@ -1373,16 +1404,16 @@ def render_result_head(metrics: dict, narrative: dict, timings: dict, *, cached:
 
     answers = metrics.get("answers") or []
     if answers:
-        section("所以，我该关心什么", "三句话回答接手前真正会问的事")
+        section("01", "所以，我该关心什么", "三句话回答接手前真正会问的事")
         render_answers(metrics)
 
-    section("凭什么这么判", fmt.band_note(metrics))
+    section("02", "凭什么这么判", fmt.band_note(metrics))
     render_dims(metrics)
 
     with st.expander("原始数字（8 项关键指标）", expanded=False):
         render_metric_cards(metrics)
 
-    section("交接清单", fmt.doc_kicker(metrics))
+    section("03", "交接清单", fmt.doc_kicker(metrics))
 
 
 def render_result(result: dict) -> None:
@@ -1397,6 +1428,15 @@ def render_result(result: dict) -> None:
     render_result_head(metrics, narrative, timings, cached=bool(result.get("cached")))
     render_document(metrics, narrative)
     render_forensics(metrics, result)
+
+    if (metrics or {}).get("ok"):
+        st.markdown(
+            '<div class="req-foot">'
+            f"<span>{esc(fmt.repo_url(metrics))}</span>"
+            "<span>分析层确定性 · 无 LLM 参与打分</span>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
 
 def main() -> None:
@@ -1413,126 +1453,117 @@ def main() -> None:
         st.session_state["current_url"] = st.session_state.pop("queued_url")
 
     render_sidebar()
-    render_masthead()
 
-    result = st.session_state.get("result")
-    render_top_alerts(result)
+    # ── 整个主区都在同一张纸上：抬头、输入、结果或封面 ─────────────────────
+    with st.container(key="sheet"):
+        render_masthead()
 
-    url, submitted = render_input()
+        result = st.session_state.get("result")
+        render_top_alerts(result)
 
-    st.markdown(
-        '<div class="req-hint">GitHub / GitLab · 公开仓库 · 回车或点按钮均可触发'
-        "　|　分析层不含 AI，六维打分完全确定性</div>",
-        unsafe_allow_html=True,
-    )
+        url, submitted = render_input()
+        st.markdown(
+            '<div class="req-hint req-inputzone" style="padding-top:0">'
+            "GitHub / GitLab · 公开仓库 · 回车或点按钮均可触发"
+            "　|　分析层不含 AI，六维打分完全确定性</div>",
+            unsafe_allow_html=True,
+        )
 
-    autorun = bool(st.session_state.pop("autorun", False))
-    should_run = (submitted or autorun) and bool(url)
+        autorun = bool(st.session_state.pop("autorun", False))
+        should_run = (submitted or autorun) and bool(url)
 
-    if should_run:
-        st.session_state["current_url"] = url
-        forced = bool(st.session_state.get("force_refresh"))
+        if should_run:
+            st.session_state["current_url"] = url
+            forced = bool(st.session_state.get("force_refresh"))
 
-        # ── 阶段一：指标。50 秒左右，进度条按 analyzer 的真实阶段推进。
-        try:
-            metrics, timings, error = analyze_phase(url)
-        except Exception as exc:  # noqa: BLE001 —— 顶层兜底，页面绝不白屏
-            metrics, timings, error = (
-                {"ok": False},
-                {},
-                {"kind": "unknown", "message": f"{type(exc).__name__}: {exc}"},
+            # ── 阶段一：指标。50 秒左右，进度条按 analyzer 的真实阶段推进。
+            try:
+                metrics, timings, error = analyze_phase(url)
+            except Exception as exc:  # noqa: BLE001 —— 顶层兜底，页面绝不白屏
+                metrics, timings, error = (
+                    {"ok": False},
+                    {},
+                    {"kind": "unknown", "message": f"{type(exc).__name__}: {exc}"},
+                )
+
+            if error or not (metrics or {}).get("ok"):
+                st.session_state["result"] = {
+                    "metrics": metrics or {"ok": False},
+                    "narrative": {},
+                    "timings": timings,
+                    "error": error or (metrics or {}).get("error") or {"kind": "unknown"},
+                }
+                st.rerun()
+
+            # ── 先把分数画出来：这一刻用户已经看到 80 分了，不必等 LLM。
+            render_result_head(metrics, {}, timings)
+            st.markdown(
+                '<div class="req-hint" style="margin:-2px 0 0 2px">数字是最终结果。下面是叙事文档，正在写…</div>',
+                unsafe_allow_html=True,
             )
 
-        if error or not (metrics or {}).get("ok"):
+            # ── 阶段二：叙事。失败也只是降级，不影响上面的数字。
+            try:
+                narrative, narr_elapsed, narr_cached = narrative_phase(metrics, forced=forced)
+            except Exception as exc:  # noqa: BLE001
+                narrative, narr_elapsed, narr_cached = (
+                    _degraded_narrative(f"{type(exc).__name__}: {exc}", metrics),
+                    0.0,
+                    False,
+                )
+
+            timings["narrative"] = narr_elapsed
             st.session_state["result"] = {
-                "metrics": metrics or {"ok": False},
-                "narrative": {},
+                "metrics": metrics,
+                "narrative": narrative,
                 "timings": timings,
-                "error": error or (metrics or {}).get("error") or {"kind": "unknown"},
+                "cached": narr_cached,
+                "error": None,
             }
+            st.session_state["force_refresh"] = False
+            # 重跑一次：让「已采样 / AI 降级」这类横幅出现在页面真正顶部，
+            # 而不是等下一次交互才补上。结果已在 session_state 里，重跑是瞬时的。
             st.rerun()
 
-        # ── 先把分数画出来：这一刻用户已经看到 80 分了，不必等 LLM。
-        st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
-        render_result_head(metrics, {}, timings)
-        st.markdown(
-            '<div class="req-hint" style="margin:-2px 0 0 2px">数字是最终结果。下面是叙事文档，正在写…</div>',
-            unsafe_allow_html=True,
-        )
-
-        # ── 阶段二：叙事。失败也只是降级，不影响上面的数字。
-        try:
-            narrative, narr_elapsed, narr_cached = narrative_phase(metrics, forced=forced)
-        except Exception as exc:  # noqa: BLE001
-            narrative, narr_elapsed, narr_cached = (
-                _degraded_narrative(f"{type(exc).__name__}: {exc}", metrics),
-                0.0,
-                False,
+        if st.session_state.get("demo"):
+            st.markdown(
+                notice(
+                    "preview",
+                    "<b>界面预览</b> · 下面是演示数据，只用来检查排版；真实分析需要 src/analyzer.py 就绪。",
+                    "ghost",
+                ),
+                unsafe_allow_html=True,
             )
+            if st.button("退出预览", key="demo_exit"):
+                st.session_state["demo"] = False
+                st.rerun()
 
-        timings["narrative"] = narr_elapsed
-        st.session_state["result"] = {
-            "metrics": metrics,
-            "narrative": narrative,
-            "timings": timings,
-            "cached": narr_cached,
-            "error": None,
-        }
-        st.session_state["force_refresh"] = False
-        # 重跑一次：让「已采样 / AI 降级」这类横幅出现在页面真正顶部，
-        # 而不是等下一次交互才补上。结果已在 session_state 里，重跑是瞬时的。
-        st.rerun()
+            # 演示态与真实结果共用同一张纸
+            render_score_hero(DEMO_METRICS, DEMO_NARRATIVE, 41.2)
+            section("01", "凭什么这么判", fmt.band_note(DEMO_METRICS))
+            render_dims(DEMO_METRICS)
+            with st.expander("原始数字（8 项关键指标）", expanded=False):
+                render_metric_cards(DEMO_METRICS)
+            section("02", "交接清单", fmt.doc_kicker(DEMO_METRICS))
+            render_document(DEMO_METRICS, DEMO_NARRATIVE)
+            render_forensics(
+                DEMO_METRICS,
+                {"metrics": DEMO_METRICS, "timings": {"analyze": 35.4, "narrative": 5.8}},
+            )
+            return
 
-    if st.session_state.get("demo"):
-        st.markdown(
-            notice(
-                "preview",
-                "<b>界面预览</b> · 下面是演示数据，只用来检查排版；真实分析需要 src/analyzer.py 就绪。",
-                "ghost",
-            ),
-            unsafe_allow_html=True,
-        )
-        if st.button("退出预览", key="demo_exit"):
-            st.session_state["demo"] = False
-            st.rerun()
-
-        render_score_hero(DEMO_METRICS, DEMO_NARRATIVE, 41.2)
-        section("六维拆解", fmt.band_note(DEMO_METRICS))
-        render_dims(DEMO_METRICS)
-        section("关键指标", "点击标签可看口径")
-        render_metric_cards(DEMO_METRICS)
-        section("生成文档", fmt.doc_kicker(DEMO_METRICS))
-        render_document(DEMO_METRICS, DEMO_NARRATIVE)
-        render_forensics(
-            DEMO_METRICS,
-            {"metrics": DEMO_METRICS, "timings": {"analyze": 35.4, "narrative": 5.8}},
-        )
-        return
-
-    if result:
-        st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
-        render_result(result)
-    else:
-        st.markdown(
-            '<div class="req-empty">'
-            '<div class="req-empty__glyph">awaiting first reading</div>'
-            '<div class="req-empty__title">还没有待检的仓库</div>'
-            '<div class="req-empty__detail">'
-            "在上面贴一个公开仓库地址，或从左侧挑一个样本。<br>"
-            "一次检查大约 10–60 秒：接入 → 采集指标 → 生成叙事。"
-            "</div>" + _legend_html() + "</div>",
-            unsafe_allow_html=True,
-        )
-
-    if result and (result.get("metrics") or {}).get("ok"):
-        metrics = result["metrics"]
-        st.markdown(
-            '<div class="req-foot">'
-            f"<span>{esc(fmt.repo_url(metrics))}</span>"
-            "<span>分析层确定性 · 无 LLM 参与打分</span>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
+        if result:
+            render_result(result)
+        else:
+            st.markdown(
+                '<div class="req-empty">'
+                '<div class="req-empty__title">还没有待检的仓库</div>'
+                '<div class="req-empty__detail">'
+                "在上面贴一个公开仓库地址，或从左侧挑一个样本。<br>"
+                "一次检查大约 10–60 秒：接入 → 采集指标 → 生成叙事。"
+                "</div>" + _legend_html() + "</div>",
+                unsafe_allow_html=True,
+            )
 
 
 if __name__ == "__main__":
