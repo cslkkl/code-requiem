@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import socket
+import subprocess
 import time
 
 _CACHE: dict[str, tuple[float, bool]] = {}
@@ -37,9 +38,35 @@ def tcp_open(host: str, port: int = 443, timeout: float = 3.0) -> bool:
     return ok
 
 
+def git_binary_available() -> bool:
+    """系统里有没有 git 命令。
+
+    为什么单独查：Hugging Face Spaces 的运行时镜像不保证带 git，
+    而 `gitpython` 只是调 subprocess，没有 git 就直接抛 FileNotFoundError。
+    提前知道就不用白等一次 15-40 秒的克隆超时，直接走 API 兜底。
+    """
+    key = "git-binary"
+    now = time.monotonic()
+    hit = _CACHE.get(key)
+    if hit and now - hit[0] < TTL:
+        return hit[1]
+    ok = False
+    try:
+        proc = subprocess.run(
+            ["git", "--version"],
+            capture_output=True,
+            timeout=5,
+        )
+        ok = proc.returncode == 0
+    except Exception:
+        ok = False
+    _CACHE[key] = (now, ok)
+    return ok
+
+
 def github_git_available() -> bool:
-    """git clone github 仓库是否走得通。"""
-    return tcp_open("github.com")
+    """git clone github 仓库是否走得通（既要网络通，也要本机有 git）。"""
+    return git_binary_available() and tcp_open("github.com")
 
 
 def github_api_available() -> bool:

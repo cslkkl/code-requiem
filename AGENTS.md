@@ -55,7 +55,7 @@ git -c "http.https://github.com/.proxy=" push origin main
 
 ## 待办
 
-- [ ] HF Spaces 部署（**阻塞**：需要维护者提供 `HF_TOKEN`）
+- [ ] HF Spaces 部署（脚本与文档已就绪：`scripts/deploy_hf.py` + `docs/DEPLOY-HF.md`；待维护者提供 Write 权限的 `HF_TOKEN`）
 - [x] 90 秒 SLA（加 `BUDGET_SEC=75` 全局预算）
 - [x] 界面截图（4 张，docs/screenshots/）
 - [ ] 60-90 秒演示视频
@@ -83,6 +83,7 @@ git -c "http.https://github.com/.proxy=" push origin main
 - 测试覆盖与运行 → [tests/README.md](tests/README.md)
 - 运维脚本 → [scripts/README.md](scripts/README.md)
 - 决策与依据 → [.agents/notes/](.agents/notes/)
+- 部署指南 → [docs/DEPLOY-HF.md](docs/DEPLOY-HF.md)
 - 提交材料 → [docs/DEVPOST.md](docs/DEVPOST.md)
 - 演示脚本 → [docs/DEMO.md](docs/DEMO.md)
 - 实现规格 → [docs/SPEC.md](docs/SPEC.md)（唯一事实来源）

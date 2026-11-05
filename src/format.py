@@ -654,13 +654,13 @@ def llm_badge(info: dict | None) -> dict:
         return {
             "online": True,
             "text": text,
-            "tone": "#7FA98C",
+            "tone": "#346538",
             "detail": f"来源 {source or '未知'}" + (f" · {endpoint}" if endpoint else ""),
         }
     return {
         "online": False,
         "text": "AI 叙事：离线（将降级为结构化指标）",
-        "tone": "#A8645F",
+        "tone": "#8A6209",
         "detail": f"来源 {source or '未配置'}"
         + (f" · {endpoint}" if endpoint else "")
         + "；没有 key 时仍会输出结构化文档，只是没有叙事文本。",
