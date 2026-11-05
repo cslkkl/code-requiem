@@ -31,3 +31,6 @@ desktop.ini
 .idea/
 .vscode/
 *.swp
+
+# 演示视频的中间产物（原始录屏、抽帧）不入库，只提交成片
+docs/_video/
