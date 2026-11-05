@@ -52,10 +52,28 @@ def _clean(value: str | None) -> str:
 
 
 def _env(name: str) -> str:
+    """按优先级读一个配置项：环境变量 → st.secrets → 空串。
+
+    为什么要多一层 st.secrets：Streamlit Community Cloud 的密钥只存在
+    ``st.secrets`` 里。虽然新版也会把它们注入成环境变量，
+    但官方明确建议用 ``st.secrets`` 读，且本地 ``.streamlit/secrets.toml``
+    也走这条路径。不读 st.secrets 就等于在 Cloud 上永远拿不到密钥。
+    """
     value = os.environ.get(name)
-    if value is None:
-        return ""
-    return _clean(value)
+    if value is not None:
+        cleaned = _clean(value)
+        if cleaned:
+            return cleaned
+    try:
+        import streamlit as st
+
+        secret = st.secrets.get(name)  # type: ignore[union-attr]
+        if secret is not None:
+            return _clean(str(secret))
+    except Exception:
+        # 非 Streamlit 环境（命令行脚本、单元测试）会走到这里，静默忽略
+        pass
+    return ""
 
 
 def _llm_disabled() -> bool:

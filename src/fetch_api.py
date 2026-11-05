@@ -24,8 +24,9 @@ from pathlib import Path
 import requests
 
 try:
-    from . import net  # type: ignore
+    from . import github_api, net  # type: ignore
 except ImportError:  # 脚本模式
+    import github_api  # type: ignore
     import net  # type: ignore
 
 API = "https://api.github.com"
@@ -48,7 +49,8 @@ def _note_status(status: int, body: str, headers) -> None:
 
 def _headers() -> dict:
     h = dict(_UA)
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    # 统一走 github_api.read_token()，兼容环境变量与 st.secrets（Streamlit Cloud）
+    token = github_api.read_token()
     if token:
         h["Authorization"] = f"Bearer {token}"
     return h

@@ -40,16 +40,38 @@ LAST_ERROR: str | None = None
 RATE_LIMITED: bool = False
 
 
+def read_token() -> str:
+    """读 GitHub token：环境变量 → st.secrets。
+
+    为什么要多一层：Streamlit Community Cloud 的密钥存在 ``st.secrets`` 里，
+    只读环境变量的话，线上部署会一直以匿名身份跑（60 次/小时），
+    第 5 个访客就撞限流。
+    """
+    tok = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if tok:
+        return tok.strip()
+    try:
+        import streamlit as st
+
+        for key in ("GITHUB_TOKEN", "GH_TOKEN"):
+            val = st.secrets.get(key)  # type: ignore[union-attr]
+            if val:
+                return str(val).strip()
+    except Exception:
+        pass
+    return ""
+
+
 def _headers() -> dict:
     h = dict(_UA)
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    token = read_token()
     if token:
         h["Authorization"] = f"Bearer {token}"
     return h
 
 
 def has_token() -> bool:
-    return bool(os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN"))
+    return bool(read_token())
 
 
 def _ck(key: str) -> Path:

@@ -55,7 +55,7 @@ git -c "http.https://github.com/.proxy=" push origin main
 
 ## 待办
 
-- [ ] HF Spaces 部署（脚本与文档已就绪：`scripts/deploy_hf.py` + `docs/DEPLOY-HF.md`；待维护者提供 Write 权限的 `HF_TOKEN`）
+- [ ] 线上部署（**HF Spaces 免费版已不可用**：streamlit SDK 被移除、gradio/docker 需 PRO 订阅。改走 Streamlit Community Cloud，步骤见 [docs/DEPLOY.md](docs/DEPLOY.md)）
 - [x] 90 秒 SLA（加 `BUDGET_SEC=75` 全局预算）
 - [x] 界面截图（4 张，docs/screenshots/）
 - [ ] 60-90 秒演示视频
@@ -71,6 +71,9 @@ git -c "http.https://github.com/.proxy=" push origin main
   PowerShell 需 `[Console]::OutputEncoding = [Text.Encoding]::UTF8`
 - **`requests` 的 timeout 只是读空闲超时**：缓慢滴流的服务端会绕过它。LLM 调用额外包了
   线程 + `future.result` 硬墙（`src/narrative.py`）
+- **HF Spaces 免费版已跑不了 Streamlit**（2026-11 实测）：`sdk=streamlit` 返回 400，
+  `gradio`/`docker` 返回 402 需 PRO。只读环境变量的话线上也拿不到密钥，
+  已改为 `st.secrets` 优先（`src/llm.py::_env`、`src/github_api.py::read_token`）
 - **同一个人多个 email 会被算成多个贡献者**：`dsh-cpa-switch` 里 `zlZayn` 与 `cslkkl`
   是同一人的两个邮箱，导致 bus factor 被判 2 而非 1。SPEC 要求按 email 去重，
   这是规格与现实的偏差，暂按 SPEC 执行
@@ -83,7 +86,7 @@ git -c "http.https://github.com/.proxy=" push origin main
 - 测试覆盖与运行 → [tests/README.md](tests/README.md)
 - 运维脚本 → [scripts/README.md](scripts/README.md)
 - 决策与依据 → [.agents/notes/](.agents/notes/)
-- 部署指南 → [docs/DEPLOY-HF.md](docs/DEPLOY-HF.md)
+- 部署指南 → [docs/DEPLOY.md](docs/DEPLOY.md)
 - 提交材料 → [docs/DEVPOST.md](docs/DEVPOST.md)
 - 演示脚本 → [docs/DEMO.md](docs/DEMO.md)
 - 实现规格 → [docs/SPEC.md](docs/SPEC.md)（唯一事实来源）
