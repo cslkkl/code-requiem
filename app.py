@@ -76,6 +76,13 @@ except Exception as exc:  # noqa: BLE001
     provider_info = None  # type: ignore[assignment]
     _IMPORT_ERRORS["llm"] = f"{type(exc).__name__}: {exc}"
 
+try:
+    # 只为侧栏显示配额状态，不参与打分，所以单独 try 且允许缺失
+    from src import github_api  # type: ignore[attr-defined]
+except Exception as exc:  # noqa: BLE001
+    github_api = None  # type: ignore[assignment]
+    _IMPORT_ERRORS["github_api"] = f"{type(exc).__name__}: {exc}"
+
 
 ENGINE_READY = analyze_repo is not None
 
@@ -309,11 +316,15 @@ _CSS = """
   --req-warn:#7A5310;
   --req-bad:#8E3223;
 
-  --req-sans:'Segoe UI Variable Display','Segoe UI','PingFang SC',
+  /* 字体栈必须跨平台成立。部署在 Streamlit Cloud（Linux）时，
+     Segoe UI / PingFang / 雅黑 都不存在，早先的写法会直接掉到 DejaVu Sans，
+     字重与字宽都偏粗偏宽，标题看起来像另一种设计。
+     所以 system-ui 放第一位：各平台解析到自己的原生 UI 字体。 */
+  --req-sans:system-ui,-apple-system,'Segoe UI','PingFang SC',
              'Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC',
-             system-ui,sans-serif;
-  --req-mono:'Cascadia Mono','JetBrains Mono','SF Mono',Consolas,
-             'Liberation Mono',monospace;
+             'Source Han Sans SC','WenQuanYi Micro Hei','DejaVu Sans',sans-serif;
+  --req-mono:ui-monospace,'Cascadia Mono','JetBrains Mono','SF Mono',Consolas,
+             'Liberation Mono','DejaVu Sans Mono',monospace;
 }
 
 /* ── 基底 ──────────────────────────────────────────────────────────────── */
@@ -813,6 +824,59 @@ def _legend_html() -> str:
     return '<div class="req-legend">' + "".join(items) + "</div>"
 
 
+def _github_quota_line() -> tuple[str, str, str]:
+    """侧栏用的 GitHub 配额一行状态。返回 (文案, 颜色, 说明)。
+
+    为什么值得单独显示：令牌配没配，以前只能靠「多跑几个仓库看会不会限流」
+    去猜。匿名 60 次/小时、带令牌 5000 次/小时，差 83 倍 ——
+    配错的时候第一个访客还能用，第五个就废了，这种问题必须在界面上自证。
+    """
+    if github_api is None:
+        return ("分析引擎未就绪", "#8A8884", "src/github_api.py 尚未加载")
+
+    now = time.time()
+    cached = st.session_state.get("_gh_quota")
+    if isinstance(cached, dict) and now - float(cached.get("_ts", 0)) < 120:
+        return cached["line"]
+
+    try:
+        has = bool(github_api.has_token())
+        status = github_api.rate_limit_status() or {}
+    except Exception:
+        has, status = False, {}
+
+    limit = status.get("limit")
+    remaining = status.get("remaining")
+
+    if has and limit:
+        line = (
+            f"{remaining}/{limit} 每小时 · 已配令牌",
+            "#2F5D3A",
+            "用个人令牌鉴权，够几百人正常使用。",
+        )
+    elif has:
+        line = (
+            "已配令牌 · 配额未取到",
+            "#7A5310",
+            "令牌已设置，但这次没读到配额，可能是网络抖动。",
+        )
+    elif limit:
+        line = (
+            f"{remaining}/{limit} 每小时 · 匿名",
+            "#8E3223",
+            "匿名配额，一次分析要 6-14 次请求，第 5 个访客就会撞限流。配 GITHUB_TOKEN 可提到 5000 次/小时。",
+        )
+    else:
+        line = (
+            "匿名 · 配额未取到",
+            "#8E3223",
+            "没有配置 GITHUB_TOKEN，配额只有 60 次/小时。",
+        )
+
+    st.session_state["_gh_quota"] = {"_ts": now, "line": line}
+    return line
+
+
 def _provider_snapshot() -> dict:
     """provider_info() 带 60 秒会话缓存；任何异常都退化为「未配置」。"""
     now = time.time()
@@ -972,6 +1036,18 @@ def render_sidebar() -> None:
             )
             if st.button("预览界面（假数据）", key="demo_preview"):
                 st.session_state["demo"] = True
+
+        # ── GitHub 配额状态：让「令牌到底配没配」变成看得见的事实 ──────────
+        # 不显示这一项的话，用户只能靠「跑几个仓库看会不会限流」来猜。
+        # 匿名 60 次/小时 vs 带令牌 5000 次/小时，差 83 倍，配错代价很大。
+        st.markdown('<div class="req-side__tag">GitHub 配额</div>', unsafe_allow_html=True)
+        quota_text, quota_tone, quota_detail = _github_quota_line()
+        st.markdown(
+            f'<div class="req-pill" style="color:{quota_tone}">'
+            f'<span class="req-pill__dot"></span>{esc(quota_text)}</div>'
+            f'<div class="req-side__meta">{esc(quota_detail)}</div>',
+            unsafe_allow_html=True,
+        )
 
         st.markdown('<div class="req-side__tag">关于</div>', unsafe_allow_html=True)
         st.markdown(
