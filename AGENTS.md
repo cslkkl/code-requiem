@@ -42,7 +42,8 @@ git -c "http.https://github.com/.proxy=" push origin main
 
 ## 验证快照
 
-- 单元测试：79 passed（2026-11-05，含 explain 28 + override 8）
+- 单元测试：85 passed（2026-11-05，含 explain 28 + override 8 + budget 6；慢用例需 `RUN_SLOW=1`）
+- 90 秒 SLA：冷缓存实测 10-32 秒；最坏情况（克隆卡死 + 兜底）162s → 75s
 - Lint：ruff clean（2026-11-05）
 - 真实仓库验证（`scripts/verify_live.py`，结果见 [docs/verification.json](docs/verification.json)）
 - 49 个真实仓库标定（`scripts/calibrate.py` + `scripts/analyze_calibration.py`，结果见 [docs/calibration.json](docs/calibration.json)）
@@ -54,7 +55,8 @@ git -c "http.https://github.com/.proxy=" push origin main
 
 ## 待办
 
-- [ ] HF Spaces 部署（需要 `HF_TOKEN`，尚未拿到）
+- [ ] HF Spaces 部署（**阻塞**：需要维护者提供 `HF_TOKEN`）
+- [x] 90 秒 SLA（加 `BUDGET_SEC=75` 全局预算）
 - [x] 界面截图（4 张，docs/screenshots/）
 - [ ] 60-90 秒演示视频
 - [ ] Devpost 七项提交（`docs/DEVPOST.md` 已备好，`[HF_SPACE_URL]` 待填）
