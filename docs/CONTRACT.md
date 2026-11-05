@@ -98,6 +98,7 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
           "docs":        {"score": int, "max": 5,  "label": str, "detail": str},
       },
   },
+  "overrides": [str],                # 触发了哪些规则性修正（如「停更超两年总分封顶」）
   "data_quality": {                 # 哪些维度是「拿不到数据」而非「数据确实差」
       "complete": bool,
       "unavailable_dimensions": [str],  # "issues" | "deps" | "trend"

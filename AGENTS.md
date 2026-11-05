@@ -42,12 +42,14 @@ git -c "http.https://github.com/.proxy=" push origin main
 
 ## 验证快照
 
-- 单元测试：71 passed（2026-11-05，含 explain 层 28 个）
+- 单元测试：79 passed（2026-11-05，含 explain 28 + override 8）
 - Lint：ruff clean（2026-11-05）
 - 真实仓库验证（`scripts/verify_live.py`，结果见 [docs/verification.json](docs/verification.json)）
-  - `kornia/kornia` → 85 分 / alive / bus factor 4
-  - `cslkkl/code-requiem` → 54 分 / critical / bus factor 1
-  - `livid/v2ex-gae` → 24 分 / dead / 享年 7 年 4 个月
+- 49 个真实仓库标定（`scripts/calibrate.py` + `scripts/analyze_calibration.py`，结果见 [docs/calibration.json](docs/calibration.json)）
+  - 误判率 29% → 23%；剩余「误判」经复核多为人工标签不准而非算法错
+  - 已修：bus factor 低估（pandas 1→8、rust 7→31）、依赖口径（flask 58→73）、死亡否决（caffe2 44→29）
+  - 未决：issue/docs 两维几乎恒满分（缺区分度）、bus factor 权重偏重（活跃单人项目被判承压）
+  - 完整结论 → [.agents/notes/calibration-findings.md](.agents/notes/calibration-findings.md)
 - 确定性：同一仓库两次运行分数与指纹完全一致（已由 `test_boundary.py` 与 `verify_live.py` 双重验证）
 
 ## 待办
@@ -82,4 +84,5 @@ git -c "http.https://github.com/.proxy=" push origin main
 - 提交材料 → [docs/DEVPOST.md](docs/DEVPOST.md)
 - 演示脚本 → [docs/DEMO.md](docs/DEMO.md)
 - 实现规格 → [docs/SPEC.md](docs/SPEC.md)（唯一事实来源）
+- 与 SPEC 的偏离记录 → [docs/SPEC-NOTES.md](docs/SPEC-NOTES.md)
 - 验收结果 → [docs/verification.json](docs/verification.json)
