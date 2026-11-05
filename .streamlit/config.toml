@@ -1,35 +1,39 @@
 # 代码安魂曲 / Code Requiem —— Streamlit 运行时与主题
 #
-# 视觉基调：暖白极简 / 编辑排版。纸感底色、近黑文字、极细分隔线，
-# 语义色只用于状态徽章（存活 / 承压 / 已故），不做大面积上色。
-# 不使用任何外部字体或 CDN —— 字体栈全部落在系统已装字体上，
-# 离线与 Hugging Face Spaces（Linux）两边都能退化为系统默认可读字体。
+# 视觉基调：体检报告 / 化验单。左对齐、细分隔线、等宽数字、粗字重标题。
+# 没有卡片、没有药丸、没有衬线 —— 这三样是「AI 生成界面」最典型的痕迹。
+#
+# 圆角全部归零：编辑排版靠线条和留白组织信息，不靠圆角容器。
+# 不引用任何外部字体或 CDN：字体栈全部落在系统已装字体上，
+# Windows 与 Linux（部署环境）都能退化为可读字体。
 
 [theme]
 base = "light"
-primaryColor = "#1A1A19"            # 主按钮与链接：近黑
-backgroundColor = "#FBFBFA"         # 画布：暖白，不是纯白
-secondaryBackgroundColor = "#F7F6F3"
-textColor = "#1A1A19"
-linkColor = "#8A7A5C"               # 旧铜，唯一强调色
-borderColor = "#E7E6E3"
-codeBackgroundColor = "#F7F6F3"
-codeTextColor = "#4A4A47"
+primaryColor = "#15140F"            # 主按钮与链接：近黑
+backgroundColor = "#F4F4F2"         # 画布：冷调中性灰白，不用米黄
+secondaryBackgroundColor = "#EBEBE8"
+textColor = "#15140F"
+linkColor = "#8E3223"               # 氧化红，唯一强调色
+borderColor = "#D8D5CE"
+codeBackgroundColor = "#E7E5E0"
+codeTextColor = "#3A3833"
 
-# 正文系统无衬线（长文可读）；标题与数字交给衬线与等宽做编辑感。
-font = "'SF Pro Display','Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',system-ui,sans-serif"
-headingFont = "'Lyon Text','Newsreader','Source Han Serif SC','Songti SC','Noto Serif CJK SC',Georgia,serif"
-codeFont = "'SF Mono','Cascadia Mono','Consolas','DejaVu Sans Mono',ui-monospace,monospace"
+# 正文与标题都用无衬线，靠字重与字号拉层级。
+# 之前标题用中文衬线（宋体系）—— 那是 LLM 做「有文化感」界面时的默认套路，
+# 在中文界面里尤其明显，读起来像 PPT 而不是工具。
+font = "'Segoe UI Variable Display','Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',system-ui,sans-serif"
+headingFont = "'Segoe UI Variable Display','Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',system-ui,sans-serif"
+codeFont = "'Cascadia Mono','JetBrains Mono','SF Mono','Consolas','DejaVu Sans Mono',ui-monospace,monospace"
 
-baseFontSize = 16
-baseRadius = "8px"
-buttonRadius = "8px"
-showWidgetBorder = true
+baseFontSize = 15
+baseRadius = "0px"
+buttonRadius = "0px"
+showWidgetBorder = false
 showSidebarBorder = true
 
 [theme.sidebar]
-backgroundColor = "#F7F6F3"
-secondaryBackgroundColor = "#FFFFFF"
+backgroundColor = "#F4F4F2"
+secondaryBackgroundColor = "#EBEBE8"
 
 [server]
 headless = true

@@ -286,396 +286,484 @@ DEMO_NARRATIVE: dict = {
 _CSS = """
 <style>
 /* ═══════════════════════════════════════════════════════════════════════════
-   代码安魂曲 —— 暖白极简 / 编辑排版
-   基调：纸感底色 + 近黑文字 + 极细分隔线 + 低饱和语义色（仅用于状态）
-   不使用渐变堆叠、重阴影、外部字体或 CDN。
+   代码安魂曲 —— 体检报告排版
+   这份界面模仿的不是「AI 产品落地页」，而是纸质的化验单 / 尸检报告：
+   左对齐、细分隔线、等宽数字、粗字重标题，没有卡片、没有药丸、没有衬线。
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root{
-  /* 纸与墨 */
-  --req-paper:#FBFBFA;        /* 画布：暖白，不是纯白 */
-  --req-surface:#FFFFFF;      /* 卡片 */
-  --req-surface-2:#F7F6F3;    /* 次级面 / 内联底 */
-  --req-ink:#1A1A19;          /* 主文字：近黑，不用纯黑 */
-  --req-ink-2:#3D3D3A;        /* 次级文字 */
-  --req-ink-3:#5F5E5B;        /* 三级 / 说明 */
-  --req-ink-4:#8A8884;        /* 最弱 */
-  --req-line:#E7E6E3;         /* 结构线 */
-  --req-line-2:#F0EFEC;       /* 更弱的线 */
-  --req-accent:#8A7A5C;       /* 唯一强调：旧铜，压低饱和度 */
+  /* 纸与墨：冷调中性，不用米黄（那是「精品消费品牌」的套路） */
+  --req-paper:#F4F4F2;
+  --req-ink:#15140F;
+  --req-ink-2:#3A3833;
+  --req-ink-3:#6B6862;
+  --req-ink-4:#96938C;
+  --req-rule:#D8D5CE;      /* 主分隔线 */
+  --req-rule-2:#E7E5E0;    /* 次分隔线 */
 
-  /* 语义色：只用淡底 + 深字，绝不用大色块 */
-  --req-ok-bg:#EDF3EC;  --req-ok-ink:#346538;
-  --req-warn-bg:#FBF3DB; --req-warn-ink:#8A6209;
-  --req-bad-bg:#FDEBEC;  --req-bad-ink:#9F2F2D;
+  /* 唯一强调色：氧化红。只出现在「分数」「当前状态」「链接」三处。 */
+  --req-accent:#8E3223;
 
-  /* 字体栈：全部系统已装，离线与 Linux 都能落地 */
-  --req-sans:'SF Pro Display','Segoe UI Variable Display','Segoe UI',
-             'PingFang SC','Hiragino Sans GB','Microsoft YaHei',
-             'Noto Sans CJK SC',system-ui,sans-serif;
-  --req-serif:'Lyon Text','Newsreader','Source Han Serif SC','Songti SC',
-              'Noto Serif CJK SC',Georgia,serif;
-  --req-mono:'SF Mono','Cascadia Mono','Consolas','JetBrains Mono',
-             'DejaVu Sans Mono',ui-monospace,monospace;
+  /* 状态用墨色，不用糖果色 */
+  --req-ok:#2F5D3A;
+  --req-warn:#7A5310;
+  --req-bad:#8E3223;
+
+  --req-sans:'Segoe UI Variable Display','Segoe UI','PingFang SC',
+             'Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC',
+             system-ui,sans-serif;
+  --req-mono:'Cascadia Mono','JetBrains Mono','SF Mono',Consolas,
+             'Liberation Mono',monospace;
 }
 
-/* ── 画布 ─────────────────────────────────────────────────────────────── */
+/* ── 基底 ──────────────────────────────────────────────────────────────── */
 .stApp{background:var(--req-paper);}
-[data-testid="stHeader"]{background:transparent;}
-[data-testid="stToolbar"],[data-testid="stStatusWidget"],
-[data-testid="stDecoration"]{display:none;}
-#MainMenu,footer{visibility:hidden;}
-.block-container{max-width:1360px;padding-top:3.4rem;padding-bottom:7rem;padding-left:2.2rem;padding-right:2.2rem;}
-
-html,body,.stApp,[data-testid="stMarkdownContainer"]{
+html,body,[class*="css"]{
   font-family:var(--req-sans);
   color:var(--req-ink);
   -webkit-font-smoothing:antialiased;
 }
-[data-testid="stMarkdownContainer"] p{line-height:1.78;color:var(--req-ink-2);font-size:.95rem;}
+[data-testid="stHeader"]{background:transparent;height:0;}
+[data-testid="stToolbar"]{display:none;}
+footer{display:none;}
+#MainMenu{visibility:hidden;}
 
-/* ── 报头 ─────────────────────────────────────────────────────────────── */
+.block-container{
+  max-width:1140px;padding-top:2.6rem;padding-bottom:6rem;
+  padding-left:2.4rem;padding-right:2.4rem;
+}
+
+/* Streamlit 原生 markdown 段落 */
+[data-testid="stMarkdownContainer"] p{
+  font-size:.94rem;line-height:1.72;color:var(--req-ink-2);
+}
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3{color:var(--req-ink);letter-spacing:-.018em;}
+[data-testid="stMarkdownContainer"] code{
+  font-family:var(--req-mono);font-size:.86em;
+  background:var(--req-rule-2);padding:1px 5px;border-radius:2px;
+}
+[data-testid="stMarkdownContainer"] a{color:var(--req-accent);text-decoration:none;}
+[data-testid="stMarkdownContainer"] a:hover{text-decoration:underline;}
+[data-testid="stMarkdownContainer"] hr{border:none;border-top:1px solid var(--req-rule);}
+[data-testid="stMarkdownContainer"] ul,
+[data-testid="stMarkdownContainer"] ol{padding-left:1.2rem;}
+[data-testid="stMarkdownContainer"] li{
+  font-size:.92rem;line-height:1.7;color:var(--req-ink-2);margin-bottom:5px;
+}
+
+/* ── 报头：左对齐的一行，像报告抬头的机构名 ────────────────────────────── */
 .req-mast{
-  display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
-  padding-bottom:18px;margin-bottom:30px;
-  border-bottom:1px solid var(--req-line);
+  display:flex;align-items:baseline;gap:14px;
+  padding-bottom:13px;border-bottom:1.5px solid var(--req-ink);
+  margin-bottom:30px;
 }
 .req-mast__title{
-  font-family:var(--req-serif);font-size:1.62rem;font-weight:600;
-  letter-spacing:-.015em;color:var(--req-ink);margin:0;line-height:1.15;
+  font-family:var(--req-sans);font-size:1.72rem;font-weight:750;
+  color:var(--req-ink);letter-spacing:-.045em;line-height:1;margin:0;
 }
-.req-mast__title span{color:var(--req-accent);}
+.req-mast__title span{color:var(--req-ink);}
 .req-mast__latin{
-  font-family:var(--req-mono);font-size:.62rem;letter-spacing:.32em;
-  color:var(--req-ink-4);text-transform:uppercase;font-weight:400;
+  font-family:var(--req-mono);font-size:.66rem;letter-spacing:.19em;
+  color:var(--req-ink-4);text-transform:uppercase;
 }
 .req-mast__note{
   margin-left:auto;font-family:var(--req-mono);font-size:.68rem;
-  letter-spacing:.04em;color:var(--req-ink-3);
+  color:var(--req-ink-3);letter-spacing:.02em;
 }
 
-/* ── 提示条：左侧一道细色条，不用整块底色 ─────────────────────────────── */
-.req-notice{
-  border:1px solid var(--req-line);
-  border-left:2px solid var(--req-accent);
-  background:var(--req-surface);padding:13px 18px;border-radius:6px;
-  font-size:.84rem;color:var(--req-ink-2);line-height:1.7;margin-bottom:12px;
-}
-.req-notice--warn{border-left-color:#C9A227;background:var(--req-warn-bg);color:var(--req-warn-ink);}
-.req-notice--error{border-left-color:#B4544F;background:var(--req-bad-bg);color:var(--req-bad-ink);}
-.req-notice--ghost{border-left-color:var(--req-line);background:var(--req-surface-2);color:var(--req-ink-3);}
-.req-notice__tag{
-  display:block;font-family:var(--req-mono);font-size:.6rem;letter-spacing:.24em;
-  color:var(--req-ink-4);margin-bottom:6px;text-transform:uppercase;
-}
-.req-notice code{
-  background:rgba(0,0,0,.05);padding:1px 6px;border-radius:4px;
-  font-family:var(--req-mono);font-size:.78em;
-}
-
-/* ── 总分英雄区：白卡 + 细环 ──────────────────────────────────────────── */
-.req-hero{
-  display:grid;grid-template-columns:auto 1fr;gap:34px;align-items:center;
-  border:1px solid var(--req-line);border-radius:12px;
-  background:var(--req-surface);padding:34px 38px;margin-bottom:14px;
-}
-.req-ring{
-  width:150px;height:150px;border-radius:50%;position:relative;
-  display:grid;place-items:center;flex:none;
-}
-.req-ring::after{
-  content:"";position:absolute;inset:7px;border-radius:50%;
-  background:var(--req-surface);
-}
-.req-ring__in{position:relative;z-index:1;text-align:center;}
-.req-ring__num{
-  font-family:var(--req-serif);font-size:2.9rem;line-height:1;font-weight:600;
-  color:var(--req-ink);letter-spacing:-.03em;
-}
-.req-ring__max{
-  font-family:var(--req-mono);font-size:.58rem;letter-spacing:.22em;
-  color:var(--req-ink-4);margin-top:8px;
-}
-.req-hero__body{min-width:0;}
-.req-hero__row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
-.req-badge{
-  display:inline-flex;align-items:center;gap:7px;
-  font-family:var(--req-mono);font-size:.66rem;letter-spacing:.1em;
-  padding:5px 12px;border-radius:999px;font-weight:500;
-}
-.req-badge__dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
-.req-hero__repo{
-  font-family:var(--req-serif);font-size:1.32rem;font-weight:600;
-  color:var(--req-ink);letter-spacing:-.01em;margin-bottom:10px;
-}
-.req-verdict{font-size:1rem;line-height:1.78;color:var(--req-ink-2);margin-bottom:15px;}
-.req-hero__foot{
-  font-family:var(--req-mono);font-size:.67rem;letter-spacing:.03em;
-  color:var(--req-ink-4);display:flex;gap:9px;flex-wrap:wrap;align-items:center;
-}
-.req-hero__foot span[data-sep]{color:var(--req-line);}
-.req-hero__band{
-  font-family:var(--req-mono);font-size:.66rem;letter-spacing:.08em;
-  color:var(--req-ink-3);
-}
-
-/* ── 区块标题：编号 + 细线 ────────────────────────────────────────────── */
-.req-sec{
-  display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;
-  margin:42px 0 18px;
-}
-.req-sec__label{
-  font-family:var(--req-mono);font-size:.66rem;letter-spacing:.2em;
-  color:var(--req-ink-4);text-transform:uppercase;
-}
-.req-sec__rule{flex:1;height:1px;background:var(--req-line-2);}
-.req-sec__hint{font-size:.79rem;color:var(--req-ink-3);}
-
-/* ── 六维：去掉重边框，用「名称 / 分数 / 细轨 / 两行说明」 ─────────────── */
-.req-dims{display:flex;flex-direction:column;gap:2px;}
-.req-dim{
-  padding:20px 0 19px;border-bottom:1px solid var(--req-line-2);
-  display:grid;grid-template-columns:1fr auto;gap:0 20px;align-items:baseline;
-}
-.req-dim:first-child{border-top:1px solid var(--req-line-2);}
-.req-dim__top{display:contents;}
-.req-dim__name{
-  font-size:.94rem;font-weight:500;color:var(--req-ink);letter-spacing:-.005em;
-}
-.req-dim__score{
-  font-family:var(--req-mono);font-size:.86rem;font-weight:500;
-  letter-spacing:.02em;font-variant-numeric:tabular-nums;
-}
-.req-dim__track{
-  grid-column:1 / -1;height:3px;background:var(--req-surface-2);
-  margin:11px 0 10px;border-radius:999px;overflow:hidden;
-}
-.req-dim__fill{height:100%;border-radius:999px;}
-.req-dim__detail{
-  grid-column:1 / -1;font-size:.82rem;line-height:1.7;color:var(--req-ink-2);
-}
-.req-dim__why{
-  grid-column:1 / -1;font-size:.79rem;line-height:1.7;color:var(--req-ink-3);
-  margin-top:7px;padding-left:12px;border-left:1px solid var(--req-line);
-}
-.req-dim__why b{
-  font-family:var(--req-mono);font-size:.62rem;letter-spacing:.1em;
-  color:var(--req-accent);margin-right:8px;font-weight:500;text-transform:uppercase;
-}
-/* 术语原文：附在中文问法后面，需要对照 SPEC 的人才看 */
-.req-dim__term{
-  font-family:var(--req-mono);font-size:.64rem;font-style:normal;
-  color:var(--req-ink-4);margin-left:8px;letter-spacing:.02em;
-}
-.req-dim__score i{
-  font-style:normal;font-size:.72rem;color:var(--req-ink-4);margin-left:1px;
-}
-
-/* ── 三个实际问题：结果页最重要的区块 ─────────────────────────────────── */
-.req-answers{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
-}
-@media (max-width:900px){.req-answers{grid-template-columns:1fr;}}
-.req-answer{
-  border:1px solid var(--req-line);border-radius:12px;background:var(--req-surface);
-  padding:20px 20px 18px;display:flex;flex-direction:column;gap:9px;
-}
-.req-answer__q{
-  font-family:var(--req-mono);font-size:.68rem;letter-spacing:.08em;
-  color:var(--req-ink-3);
-}
-.req-answer__a{
-  display:inline-block;align-self:flex-start;
-  font-size:.98rem;font-weight:600;line-height:1.35;
-  padding:6px 13px;border-radius:999px;letter-spacing:-.005em;
-}
-.req-answer__d{
-  font-size:.82rem;line-height:1.72;color:var(--req-ink-2);
-}
-
-/* ── 文档卡 ───────────────────────────────────────────────────────────── */
-.req-doc-head{
-  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
-  padding-bottom:13px;margin-bottom:4px;border-bottom:1px solid var(--req-line);
-}
-.req-doc-head__kicker{
-  font-family:var(--req-mono);font-size:.6rem;letter-spacing:.26em;
-  color:var(--req-ink-4);text-transform:uppercase;
-}
-.req-doc-head__title{
-  font-family:var(--req-serif);font-size:1.06rem;font-weight:600;color:var(--req-ink);
-}
-.req-doc-head__meta{
-  margin-left:auto;font-family:var(--req-mono);font-size:.66rem;
-  color:var(--req-ink-4);letter-spacing:.03em;
-}
-
-/* ── 空状态 ───────────────────────────────────────────────────────────── */
-.req-empty{
-  border:1px solid var(--req-line);border-radius:14px;background:var(--req-surface);
-  padding:78px 40px 70px;text-align:center;
-}
-.req-empty__glyph{
-  font-family:var(--req-mono);font-size:.68rem;color:var(--req-ink-4);
-  letter-spacing:.44em;text-transform:uppercase;margin-bottom:26px;
-}
-.req-empty__title{
-  font-family:var(--req-serif);font-size:1.52rem;font-weight:600;
-  color:var(--req-ink);margin-bottom:14px;letter-spacing:-.022em;line-height:1.25;
-}
-.req-empty__detail{font-size:.9rem;line-height:1.85;color:var(--req-ink-2);max-width:46ch;margin:0 auto;}
-/* ── 图例（分数区间）──────────────────────────────────────────────────── */
-.req-legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px;justify-content:center;}
-.req-legend__item{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--req-ink-2);}
-.req-legend__bar{width:14px;height:3px;border-radius:999px;}
-.req-legend__range{font-family:var(--req-mono);font-size:.68rem;color:var(--req-ink-4);}
-
-/* ── 打分依据表 ───────────────────────────────────────────────────────── */
-.req-table{width:100%;border-collapse:collapse;font-size:.81rem;}
-.req-table th{
-  text-align:left;font-family:var(--req-mono);font-size:.6rem;letter-spacing:.16em;
-  color:var(--req-ink-4);text-transform:uppercase;font-weight:400;
-  padding:9px 12px 9px 0;border-bottom:1px solid var(--req-line);
-}
-.req-table td{
-  padding:11px 12px 11px 0;border-bottom:1px solid var(--req-line-2);
-  color:var(--req-ink-2);vertical-align:top;line-height:1.6;
-}
-.req-table td.num{
-  font-family:var(--req-mono);font-variant-numeric:tabular-nums;
-  color:var(--req-ink);white-space:nowrap;
-}
-.req-table td.dim{color:var(--req-ink);font-weight:500;white-space:nowrap;}
-
-/* ── 侧栏 ─────────────────────────────────────────────────────────────── */
-[data-testid="stSidebar"]{background:var(--req-surface-2);border-right:1px solid var(--req-line);}
-'[data-testid="stSidebar"] *{color:var(--req-ink-2);}
-[data-testid="stSidebar"] .stButton>button[kind="secondary"]{
-  background:var(--req-surface);border:1px solid var(--req-line);
-  font-family:var(--req-mono);font-size:.76rem;text-align:left;
-  justify-content:flex-start;padding:9px 13px;
-}
-[data-testid="stSidebar"] .stButton>button[kind="secondary"]:hover{
-  background:var(--req-surface);border-color:var(--req-ink-4);
-}
-[data-testid="stSidebar"] .stButton>button:focus:not(:active){
-  background:var(--req-surface);border-color:var(--req-ink-4);color:var(--req-ink);
-}'
-.req-side__title{
-  font-family:var(--req-serif);font-size:.98rem;font-weight:600;
-  color:var(--req-ink);margin-bottom:7px;
-}
-.req-side__desc{font-size:.86rem;line-height:1.75;color:var(--req-ink-2);margin-bottom:3px;}
-.req-side__tag{
-  font-family:var(--req-mono);font-size:.58rem;letter-spacing:.2em;
-  color:var(--req-ink-4);text-transform:uppercase;
-  display:block;margin:22px 0 9px;
-}
-.req-side__meta{
-  font-family:var(--req-mono);font-size:.66rem;color:var(--req-ink-4);
-  line-height:1.6;letter-spacing:.02em;
-}
-
-/* ── 表单与控件 ───────────────────────────────────────────────────────── */
+/* ── 输入行：贴着分隔线的一条，不要卡片 ────────────────────────────────── */
 [data-testid="stTextInput"] input{
-  background:var(--req-surface) !important;
-  border:1px solid var(--req-line) !important;
-  border-radius:8px !important;
-  color:var(--req-ink) !important;
-  font-family:var(--req-mono) !important;font-size:.84rem !important;
-  padding:13px 15px !important;
+  font-family:var(--req-mono) !important;font-size:.88rem !important;
+  background:transparent !important;border:none !important;
+  border-bottom:1.5px solid var(--req-ink) !important;
+  border-radius:0 !important;padding:9px 2px !important;color:var(--req-ink) !important;
+}
+[data-testid="stTextInput"] input:focus{
+  box-shadow:none !important;border-bottom-color:var(--req-accent) !important;
 }
 [data-testid="stTextInput"] input::placeholder{color:var(--req-ink-4) !important;}
-[data-testid="stTextInput"] input:focus{
-  border-color:var(--req-ink-3) !important;
-  box-shadow:none !important;
+[data-testid="stTextInput"] > div{border:none !important;background:transparent !important;}
+[data-testid="stTextInput"] label{display:none;}
+
+/* Streamlit 现在把按钮渲染成 button[data-testid="stBaseButton-*"]。
+   老写法 `.stButton>button` 已经匹配不上，会静默退回 Streamlit 默认的
+   圆角白卡 —— 于是「侧栏示例」看起来又变回卡片，主按钮失去反白文字。
+   这就是必须用真实 testid 前缀选择器的原因。 */
+button[data-testid^="stBaseButton"]{
+  font-family:var(--req-mono) !important;font-size:.76rem !important;
+  letter-spacing:.08em !important;border-radius:0 !important;
+  transition:background .12s ease,color .12s ease;
 }
-.stButton>button{
-  background:var(--req-ink);color:#FFF;border:1px solid var(--req-ink);
-  border-radius:8px;font-family:var(--req-sans);font-size:.86rem;font-weight:500;
-  padding:12px 26px;box-shadow:none;transition:background .16s ease;
+/* 关键：Streamlit 把按钮文案渲染成 markdown 段落，
+   会被上面的 `stMarkdownContainer p{color:var(--req-ink-2)}` 覆盖成近黑色，
+   于是深底按钮上出现深色文字（对比度不合格）。
+   这里把按钮内部所有文字颜色拉回继承。 */
+button[data-testid^="stBaseButton"] p,
+button[data-testid^="stBaseButton"] span,
+button[data-testid^="stBaseButton"] div{
+  color:inherit !important;font-size:inherit !important;
+  line-height:1.4 !important;margin:0 !important;
 }
-.stButton>button:hover{background:#333331;border-color:#333331;color:#FFF;}
-.stButton>button:active{transform:scale(.985);}
-.stButton>button[kind="secondary"]{
-  background:var(--req-surface);color:var(--req-ink);border:1px solid var(--req-line);
+button[data-testid="stBaseButton-primaryFormSubmit"],
+button[data-testid="stBaseButton-primary"]{
+  background:var(--req-ink) !important;color:var(--req-paper) !important;
+  border:1.5px solid var(--req-ink) !important;padding:10px 22px !important;
 }
-.stButton>button[kind="secondary"]:hover{
-  background:var(--req-surface-2);border-color:var(--req-ink-4);color:var(--req-ink);
+button[data-testid="stBaseButton-primaryFormSubmit"]:hover,
+button[data-testid="stBaseButton-primary"]:hover{
+  background:var(--req-accent) !important;border-color:var(--req-accent) !important;
+  color:var(--req-paper) !important;
+}
+button[data-testid^="stBaseButton"]:active{transform:translateY(1px);}
+button[data-testid^="stBaseButton"]:focus:not(:active){
+  box-shadow:none !important;outline:1.5px solid var(--req-accent) !important;
+  outline-offset:2px;
+}
+
+/* ── 侧栏：同样用分隔线组织，不放卡片 ──────────────────────────────────── */
+[data-testid="stSidebar"]{background:var(--req-paper);border-right:1px solid var(--req-rule);}
+[data-testid="stSidebar"] > div:first-child{padding-top:2.2rem;}
+[data-testid="stSidebar"] .block-container{padding-left:1.3rem;padding-right:1.3rem;}
+.req-side__title{
+  font-family:var(--req-mono);font-size:.68rem;letter-spacing:.2em;
+  color:var(--req-ink);text-transform:uppercase;
+  padding-bottom:9px;border-bottom:1.5px solid var(--req-ink);margin-bottom:14px;
+}
+.req-side__desc{
+  font-size:.83rem;line-height:1.72;color:var(--req-ink-2);margin-bottom:24px;
+}
+.req-side__desc b{font-weight:650;color:var(--req-ink);}
+.req-side__tag{
+  font-family:var(--req-mono);font-size:.62rem;letter-spacing:.17em;
+  color:var(--req-ink-4);text-transform:uppercase;
+  padding-bottom:7px;border-bottom:1px solid var(--req-rule);
+  margin:0 0 11px;
+}
+[data-testid="stSidebar"] button[data-testid^="stBaseButton"]{
+  width:100% !important;text-align:left !important;
+  justify-content:flex-start !important;
+  font-family:var(--req-mono) !important;font-size:.76rem !important;
+  background:transparent !important;color:var(--req-ink-2) !important;
+  border:none !important;border-bottom:1px solid var(--req-rule-2) !important;
+  border-radius:0 !important;padding:8px 0 !important;
+  letter-spacing:.01em !important;box-shadow:none !important;
+}
+[data-testid="stSidebar"] button[data-testid^="stBaseButton"]:hover{
+  background:transparent !important;color:var(--req-accent) !important;
+  border-bottom-color:var(--req-accent) !important;
+}
+[data-testid="stSidebar"] button[data-testid^="stBaseButton"]:focus:not(:active){
+  background:transparent !important;color:var(--req-ink) !important;
+  box-shadow:none !important;outline:none !important;
+}
+.req-ex__note{
+  font-family:var(--req-mono);font-size:.64rem;line-height:1.55;
+  color:var(--req-ink-4);margin:2px 0 13px;
 }
 .req-pill{
-  display:inline-flex;align-items:center;gap:7px;
-  font-family:var(--req-mono);font-size:.68rem;letter-spacing:.04em;
-  padding:5px 11px;border:1px solid var(--req-line);border-radius:999px;
-  background:var(--req-surface);margin-bottom:6px;
+  display:inline-block;font-family:var(--req-mono);font-size:.66rem;
+  letter-spacing:.05em;padding:3px 0;margin-bottom:3px;
+  border:none;background:transparent;border-radius:0;
 }
-.req-pill__dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex:none;}
-.req-ex__note{
-  font-size:.72rem;line-height:1.6;color:var(--req-ink-4);
-  margin:-2px 0 9px 2px;
+.req-pill__dot{
+  display:inline-block;width:5px;height:5px;margin-right:6px;
+  vertical-align:middle;background:currentColor;
 }
-.req-hint{font-family:var(--req-mono);font-size:.68rem;color:var(--req-ink-4);letter-spacing:.02em;}
+.req-side__meta{
+  font-family:var(--req-mono);font-size:.62rem;line-height:1.6;
+  color:var(--req-ink-4);word-break:break-all;margin-bottom:20px;
+}
+.req-hint{font-family:var(--req-mono);font-size:.64rem;color:var(--req-ink-4);}
 
-/* ── 指标卡：白底细边，不要阴影 ───────────────────────────────────────── */
-[data-testid="stMetric"]{
-  background:var(--req-surface);border:1px solid var(--req-line);
-  border-radius:10px;padding:16px 17px;
+/* ── 空状态：左对齐的一段说明，不要居中的欢迎语 ────────────────────────── */
+.req-empty{
+  border-top:1px solid var(--req-rule);padding:44px 0 40px;
+  max-width:62ch;
 }
+.req-empty__glyph{
+  display:none;
+}
+.req-empty__title{
+  font-family:var(--req-sans);font-size:1.06rem;font-weight:700;
+  color:var(--req-ink);letter-spacing:-.02em;margin-bottom:10px;
+}
+.req-empty__detail{
+  font-size:.9rem;line-height:1.75;color:var(--req-ink-3);
+}
+.req-empty__detail b{color:var(--req-ink);font-weight:650;}
+
+/* ── 分数区：像化验单的抬头，巨大数字 + 右侧事实表 ────────────────────── */
+.req-hero{
+  display:grid;grid-template-columns:auto 1fr;gap:0 40px;
+  border-top:1.5px solid var(--req-ink);
+  border-bottom:1px solid var(--req-rule);
+  padding:26px 0 24px;
+}
+.req-hero__score{
+  font-family:var(--req-mono);font-size:4.6rem;font-weight:600;
+  line-height:.86;letter-spacing:-.045em;color:var(--req-ink);
+  font-variant-numeric:tabular-nums;
+}
+.req-hero__score.is-bad{color:var(--req-bad);}
+.req-hero__score.is-warn{color:var(--req-warn);}
+.req-hero__denom{
+  font-family:var(--req-mono);font-size:.72rem;color:var(--req-ink-4);
+  letter-spacing:.06em;display:block;margin-top:9px;
+}
+.req-hero__body{min-width:0;padding-top:2px;}
+.req-hero__repo{
+  font-family:var(--req-sans);font-size:1.24rem;font-weight:700;
+  color:var(--req-ink);letter-spacing:-.025em;line-height:1.2;
+  margin-bottom:7px;word-break:break-all;
+}
+.req-hero__repo a{color:inherit;text-decoration:none;}
+.req-hero__repo a:hover{color:var(--req-accent);}
+.req-hero__state{
+  font-family:var(--req-mono);font-size:.72rem;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:11px;
+}
+.req-hero__verdict{
+  font-size:.95rem;line-height:1.72;color:var(--req-ink-2);margin-bottom:16px;
+  max-width:60ch;
+}
+.req-hero__foot{
+  font-family:var(--req-mono);font-size:.64rem;letter-spacing:.02em;
+  color:var(--req-ink-4);margin-top:13px;
+}
+.req-hero__scorewrap{display:flex;flex-direction:column;justify-content:flex-end;}
+
+/* 事实表：键值对，用点线引导，像检验单的项目行 */
+.req-facts{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:0;border-top:1px solid var(--req-rule-2);
+}
+.req-fact{padding:9px 0 8px;border-bottom:1px solid var(--req-rule-2);}
+.req-fact__k{
+  font-family:var(--req-mono);font-size:.6rem;letter-spacing:.13em;
+  color:var(--req-ink-4);text-transform:uppercase;margin-bottom:3px;
+}
+.req-fact__v{
+  font-family:var(--req-mono);font-size:.82rem;color:var(--req-ink);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── 区块标题：一行文字 + 右侧批注，下面紧跟内容，不套容器 ──────────────── */
+.req-sec{
+  display:flex;align-items:baseline;gap:12px;
+  margin:44px 0 0;padding-bottom:8px;
+  border-bottom:1.5px solid var(--req-ink);
+}
+.req-sec__label{
+  font-family:var(--req-sans);font-size:.98rem;font-weight:700;
+  color:var(--req-ink);letter-spacing:-.015em;
+}
+.req-sec__hint{
+  margin-left:auto;font-family:var(--req-mono);font-size:.68rem;
+  color:var(--req-ink-4);text-align:right;
+}
+
+/* ── 三个实际问题：编号列表，整宽单列，不做三等分卡 ────────────────────── */
+.req-answers{border-bottom:1px solid var(--req-rule);}
+.req-answer{
+  display:grid;grid-template-columns:34px 1fr;gap:0 16px;
+  padding:20px 0 19px;border-top:1px solid var(--req-rule-2);
+}
+.req-answer:first-child{border-top:none;}
+.req-answer__n{
+  font-family:var(--req-mono);font-size:.72rem;color:var(--req-ink-4);
+  padding-top:3px;font-variant-numeric:tabular-nums;
+}
+.req-answer__q{
+  font-family:var(--req-sans);font-size:.92rem;font-weight:650;
+  color:var(--req-ink);margin-bottom:6px;letter-spacing:-.008em;
+}
+.req-answer__a{
+  font-family:var(--req-sans);font-size:1.06rem;font-weight:700;
+  color:var(--req-ink);letter-spacing:-.02em;margin-bottom:7px;
+}
+.req-answer__a.is-ok{color:var(--req-ok);}
+.req-answer__a.is-warn{color:var(--req-warn);}
+.req-answer__a.is-bad{color:var(--req-bad);}
+.req-answer__d{
+  font-size:.88rem;line-height:1.75;color:var(--req-ink-2);max-width:66ch;
+}
+
+/* ── 六维：表格行，不是卡片列表 ────────────────────────────────────────── */
+.req-dims{border-bottom:1px solid var(--req-rule);}
+.req-dim{
+  display:grid;grid-template-columns:1fr auto;gap:0 20px;
+  padding:16px 0 15px;border-top:1px solid var(--req-rule-2);
+}
+.req-dim:first-child{border-top:none;}
+.req-dim__top{
+  grid-column:1 / -1;display:flex;align-items:baseline;gap:9px;
+  margin-bottom:8px;
+}
+.req-dim__name{
+  font-family:var(--req-sans);font-size:.94rem;font-weight:650;
+  color:var(--req-ink);letter-spacing:-.008em;
+}
+.req-dim__term{
+  font-family:var(--req-mono);font-size:.62rem;font-style:normal;
+  color:var(--req-ink-4);letter-spacing:.03em;
+}
+.req-dim__score{
+  margin-left:auto;font-family:var(--req-mono);font-size:.9rem;
+  font-weight:600;font-variant-numeric:tabular-nums;
+}
+.req-dim__score i{
+  font-style:normal;font-size:.68rem;color:var(--req-ink-4);font-weight:400;
+}
+.req-dim__track{
+  grid-column:1 / -1;height:2px;background:var(--req-rule-2);
+  margin-bottom:9px;position:relative;overflow:hidden;
+}
+.req-dim__fill{height:100%;}
+.req-dim__detail{
+  grid-column:1 / -1;font-size:.85rem;line-height:1.72;color:var(--req-ink-2);
+  max-width:74ch;
+}
+.req-dims__note{
+  font-family:var(--req-mono);font-size:.66rem;color:var(--req-ink-4);
+  padding:9px 0 0;letter-spacing:.02em;
+}
+
+/* ── 指标卡：改成紧凑的键值网格，不要八个大方块 ────────────────────────── */
+[data-testid="stMetric"]{padding:0;}
 [data-testid="stMetricLabel"] p{
   font-family:var(--req-mono) !important;font-size:.6rem !important;
-  letter-spacing:.16em !important;color:var(--req-ink-4) !important;
+  letter-spacing:.11em !important;color:var(--req-ink-4) !important;
   text-transform:uppercase;
 }
 [data-testid="stMetricValue"]{
-  font-family:var(--req-serif) !important;font-size:1.5rem !important;
-  font-weight:600 !important;color:var(--req-ink) !important;letter-spacing:-.02em;
+  font-family:var(--req-mono) !important;font-size:1.02rem !important;
+  font-weight:600 !important;color:var(--req-ink) !important;
+  font-variant-numeric:tabular-nums;
 }
-[data-testid="stMetricDelta"]{font-family:var(--req-mono);font-size:.66rem;}
+[data-testid="stHorizontalBlock"]{gap:0 !important;}
 
-/* ── 容器 / 展开面板 / 标签页 ─────────────────────────────────────────── */
-[data-testid="stVerticalBlockBorderWrapper"]>div{
-  border-color:var(--req-line) !important;border-radius:12px;
-}
+/* ── 折叠区：像报告的附录，朴素 ────────────────────────────────────────── */
 [data-testid="stExpander"]{
-  border:1px solid var(--req-line);border-radius:10px;background:var(--req-surface);
+  border:1px solid var(--req-rule) !important;border-radius:0 !important;
+  background:transparent !important;margin:14px 0 0 !important;
 }
 [data-testid="stExpander"] summary{
-  font-family:var(--req-mono);font-size:.72rem;color:var(--req-ink-3);
-  letter-spacing:.04em;
+  font-family:var(--req-mono) !important;font-size:.74rem !important;
+  color:var(--req-ink-2) !important;padding:10px 13px !important;
+  letter-spacing:.02em;
 }
-.stTabs [data-baseweb="tab-list"]{
-  gap:26px;border-bottom:1px solid var(--req-line);
-}
-.stTabs [data-baseweb="tab"]{
-  font-family:var(--req-mono);font-size:.72rem;letter-spacing:.06em;
-  color:var(--req-ink-3);padding:9px 2px;
-}
-.stTabs [aria-selected="true"]{color:var(--req-ink);}
+[data-testid="stExpander"] summary:hover{color:var(--req-accent) !important;}
+[data-testid="stExpander"] > div{border-top:1px solid var(--req-rule);}
 
-/* ── 进度 ─────────────────────────────────────────────────────────────── */
-[data-testid="stProgressBarTrack"]>div{background:var(--req-accent) !important;border-radius:999px;}
-[data-testid="stProgressBarTrack"]{background:var(--req-surface-2) !important;border-radius:999px;}
+/* ── 提示条：左侧竖线，不是圆角卡片 ────────────────────────────────────── */
+.req-notice{
+  font-size:.86rem;line-height:1.72;color:var(--req-ink-2);
+  padding:11px 0 11px 14px;margin:14px 0;
+  border-left:2.5px solid var(--req-ink-4);background:transparent;
+}
+.req-notice b{
+  font-family:var(--req-mono);font-size:.68rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--req-ink);margin-right:7px;
+}
+.req-notice code{
+  font-family:var(--req-mono);font-size:.86em;background:var(--req-rule-2);
+  padding:1px 4px;
+}
+.req-notice.is-warn{border-left-color:var(--req-warn);}
+.req-notice.is-bad{border-left-color:var(--req-bad);}
+.req-notice.is-ok{border-left-color:var(--req-ok);}
+.req-notice.is-ghost{border-left-color:var(--req-rule);}
 
-/* ── 正文 Markdown（遗嘱/悼词）排版 ───────────────────────────────────── */
-.req-doc h1{
-  font-family:var(--req-serif);font-size:1.34rem;font-weight:600;
-  color:var(--req-ink);margin:6px 0 20px;letter-spacing:-.015em;
+/* ── 文档区：正文像排版过的手册，标题用字重不用颜色 ────────────────────── */
+.req-doc-head{
+  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding-bottom:9px;border-bottom:1px solid var(--req-rule);margin-bottom:18px;
+}
+.req-doc-head__t{
+  font-family:var(--req-sans);font-size:.92rem;font-weight:700;
+  color:var(--req-ink);letter-spacing:-.01em;
+}
+.req-doc-head__m{
+  margin-left:auto;font-family:var(--req-mono);font-size:.66rem;
+  color:var(--req-ink-4);letter-spacing:.02em;
+}
+.req-doc{
+  font-size:.92rem;line-height:1.82;color:var(--req-ink-2);
 }
 .req-doc h2{
-  font-family:var(--req-sans);font-size:.96rem;font-weight:600;
-  color:var(--req-ink);margin:30px 0 11px;padding-top:16px;
-  border-top:1px solid var(--req-line-2);letter-spacing:-.005em;
+  font-family:var(--req-sans);font-size:1.02rem;font-weight:700;
+  color:var(--req-ink);letter-spacing:-.018em;
+  margin:30px 0 11px;padding-bottom:7px;
+  border-bottom:1px solid var(--req-rule-2);
 }
-.req-doc h2:first-of-type{border-top:none;padding-top:0;}
-.req-doc p,.req-doc li{font-size:.86rem;line-height:1.8;color:var(--req-ink-2);}
-.req-doc li{margin-bottom:7px;}
-.req-doc code{
-  background:var(--req-surface-2);padding:1px 6px;border-radius:4px;
-  font-family:var(--req-mono);font-size:.82em;color:var(--req-ink-2);
+.req-doc h3{
+  font-size:.94rem;font-weight:650;color:var(--req-ink);
+  margin:19px 0 7px;
 }
-.req-doc blockquote{
-  border-left:2px solid var(--req-line);padding-left:15px;margin:16px 0;
-  color:var(--req-ink-3);font-size:.85rem;
+.req-doc p{margin:0 0 11px;}
+.req-doc ul,.req-doc ol{margin:0 0 13px;padding-left:1.25rem;}
+.req-doc li{margin-bottom:5px;line-height:1.78;}
+.req-doc strong{color:var(--req-ink);font-weight:650;}
+.req-doc table{
+  width:100%;border-collapse:collapse;margin:13px 0;font-size:.86rem;
+}
+.req-doc th{
+  font-family:var(--req-mono);font-size:.66rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--req-ink-4);font-weight:500;
+  text-align:left;padding:7px 10px 7px 0;
+  border-bottom:1.5px solid var(--req-rule);
+}
+.req-doc td{
+  padding:8px 10px 8px 0;border-bottom:1px solid var(--req-rule-2);
+  color:var(--req-ink-2);vertical-align:top;
+}
+
+/* ── 页脚 ──────────────────────────────────────────────────────────────── */
+.req-foot{
+  margin-top:52px;padding-top:13px;border-top:1.5px solid var(--req-ink);
+  font-family:var(--req-mono);font-size:.64rem;letter-spacing:.04em;
+  color:var(--req-ink-4);display:flex;gap:18px;flex-wrap:wrap;
+}
+
+/* ── 进度 / 加载 ───────────────────────────────────────────────────────── */
+[data-testid="stStatusWidget"]{
+  font-family:var(--req-mono) !important;font-size:.72rem !important;
+  color:var(--req-ink-3) !important;
+}
+.stSpinner>div{border-color:var(--req-ink-4) transparent transparent transparent !important;}
+[data-testid="stProgress"] > div > div > div{background:var(--req-ink) !important;}
+
+/* ── 标签页（解剖面板）──────────────────────────────────────────────────── */
+[data-testid="stTabs"] [data-baseweb="tab-list"]{
+  gap:0;border-bottom:1.5px solid var(--req-ink);background:transparent;
+}
+[data-testid="stTabs"] [data-baseweb="tab"]{
+  font-family:var(--req-mono);font-size:.74rem;color:var(--req-ink-3);
+  background:transparent;border:none;border-radius:0;
+  padding:8px 14px 8px 0;letter-spacing:.03em;
+}
+[data-testid="stTabs"] [aria-selected="true"]{
+  color:var(--req-ink) !important;font-weight:600;
+  border-bottom:2px solid var(--req-accent) !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab-highlight"],
+[data-testid="stTabs"] [data-baseweb="tab-border"]{display:none;}
+
+/* ── 数据表 ────────────────────────────────────────────────────────────── */
+[data-testid="stDataFrame"]{border:1px solid var(--req-rule) !important;border-radius:0 !important;}
+
+/* ── 选中文字 ──────────────────────────────────────────────────────────── */
+::selection{background:var(--req-ink);color:var(--req-paper);}
+
+/* ── 窄屏 ──────────────────────────────────────────────────────────────── */
+@media (max-width:760px){
+  .block-container{padding-left:1.1rem;padding-right:1.1rem;padding-top:1.6rem;}
+  .req-hero{grid-template-columns:1fr;gap:16px 0;}
+  .req-hero__score{font-size:3.2rem;}
+  .req-mast{flex-wrap:wrap;gap:6px 12px;}
+  .req-mast__note{margin-left:0;width:100%;}
 }
 </style>
 """
@@ -998,14 +1086,19 @@ def _fallback_doc(metrics: dict) -> str:
 
 
 def render_score_hero(metrics: dict, narrative: dict, elapsed_total: float, *, cached: bool = False) -> None:
+    """分数区，模仿化验单抬头：左侧巨大等宽数字，右侧仓库名 + 状态 + 结论 + 事实表。
+
+    之前的做法是一个 conic-gradient 圆环 + 淡色药丸徽章，那是 AI 落地页的默认形状。
+    化验单不会把指标画成圆环 —— 它直接把数字排得很大，让你一眼看到异常值。
+    """
     total = fmt.score_int(metrics)
     mode = str(fmt.safe_get(metrics, "score.mode") or fmt.mode_from_total(total))
     meta = fmt.mode_meta(mode)
-    pct = max(0, min(100, total if total is not None else 0))
     shown = "—" if total is None else str(total)
 
     verdict = fmt.verdict(metrics)
     repo = fmt.repo_label(metrics)
+    url = fmt.repo_url(metrics)
     generated = datetime.now(UTC).astimezone().strftime("%Y-%m-%d %H:%M")
 
     model = ""
@@ -1014,27 +1107,52 @@ def render_score_hero(metrics: dict, narrative: dict, elapsed_total: float, *, c
     if not model:
         model = "确定性指标 · 无 LLM"
 
+    # 分数颜色只表达状态，不做装饰
+    tone_cls = ""
+    if mode == "dead":
+        tone_cls = " is-bad"
+    elif mode == "critical":
+        tone_cls = " is-warn"
+
+    life = metrics.get("life") or {}
+    authors = metrics.get("authors") or {}
+    risks = metrics.get("risks") or {}
+    days = life.get("days_since_last_commit")
+    bf = authors.get("bus_factor")
+    n_authors = authors.get("total")
+
+    repo_html = f'<a href="{esc(url)}" target="_blank" rel="noreferrer">{esc(repo)}</a>' if url else esc(repo)
+
+    facts = [
+        ("最后提交", fmt.human_days(days)),
+        ("bus factor", str(bf) if bf is not None else "—"),
+        ("贡献者", str(n_authors) if n_authors is not None else "—"),
+        ("提交总数", fmt.fmt_count(life.get("total_commits"))),
+        ("享年", str(life.get("age_text") or "—")),
+        ("风险点", str(risks.get("todo_count", 0) + risks.get("fixme_count", 0))),
+    ]
+    facts_html = "".join(
+        f'<div class="req-fact"><div class="req-fact__k">{esc(k)}</div>'
+        f'<div class="req-fact__v">{esc(v)}</div></div>'
+        for k, v in facts
+    )
+
+    elapsed = fmt.elapsed_text(elapsed_total) + ("（会话缓存）" if cached else "")
+
     st.markdown(
         '<div class="req-hero">'
-        f'<div class="req-ring" style="background:conic-gradient({meta["tone"]} {pct}%, #EDEBE7 0)">'
-        '<div class="req-ring__in">'
-        f'<div class="req-ring__num">{shown}</div>'
-        '<div class="req-ring__max">/ 100</div>'
-        "</div></div>"
-        '<div class="req-hero__body">'
-        '<div class="req-hero__row">'
-        f'<span class="req-badge" style="color:{meta["status_ink"]};background:{meta["status_bg"]}">'
-        f'<span class="req-badge__dot"></span>{esc(meta["label"])}</span>'
-        f'<span class="req-hero__band">{esc(meta["band"])} 档 · {esc(meta["doc"])}模式</span>'
+        f'<div class="req-hero__scorewrap">'
+        f'<div class="req-hero__score{tone_cls}">{shown}</div>'
+        '<span class="req-hero__denom">/ 100</span>'
         "</div>"
-        f'<div class="req-hero__repo">{esc(repo)}</div>'
-        f'<p class="req-verdict">{esc(verdict)}</p>'
+        '<div class="req-hero__body">'
+        f'<div class="req-hero__repo">{repo_html}</div>'
+        f'<div class="req-hero__state" style="color:{meta["tone"]}">'
+        f"{esc(meta['label'])} · {esc(meta['band'])} 档 · {esc(meta['doc'])}模式</div>"
+        f'<p class="req-hero__verdict">{esc(verdict)}</p>'
+        f'<div class="req-facts">{facts_html}</div>'
         '<div class="req-hero__foot">'
-        f"<span>{esc(generated)}</span><i>·</i>"
-        f"<span>耗时 {esc(fmt.elapsed_text(elapsed_total))}"
-        + ("（本次会话缓存）" if cached else "")
-        + "</span><i>·</i>"
-        f"<span>{esc(str(model))}</span>"
+        f"{esc(generated)}　·　耗时 {esc(elapsed)}　·　{esc(str(model))}"
         "</div>"
         "</div></div>",
         unsafe_allow_html=True,
@@ -1126,30 +1244,28 @@ def render_answers(metrics: dict) -> None:
 
     读者不关心我们的六维模型，他关心：这东西还能用吗、出事了找谁、我先做什么。
     这三条答案直接摆在分数下面，六维指标退到它后面当证据。
+
+    排版：编号列表（01 / 02 / 03），整宽单列。
+    之前是三等分的淡色卡片，那是 AI 落地页最典型的「三张特征卡」形状，
+    而且把三条有先后关系的问题排成并列，读者不知道该先看哪条。
     """
     answers = metrics.get("answers") or []
     if not answers:
         return
 
-    tone_ink = {
-        "ok": ("#EDF3EC", "#346538"),
-        "warn": ("#FBF3DB", "#8A6209"),
-        "bad": ("#FDEBEC", "#9F2F2D"),
-        "neutral": ("#F7F6F3", "#5F5E5B"),
-    }
+    tone_cls = {"ok": " is-ok", "warn": " is-warn", "bad": " is-bad", "neutral": ""}
 
     chunks = ['<div class="req-answers">']
-    for item in answers:
-        bg, ink = tone_ink.get(str(item.get("tone")), tone_ink["neutral"])
+    for index, item in enumerate(answers, 1):
+        cls = tone_cls.get(str(item.get("tone")), "")
         chunks.append(
             '<div class="req-answer">'
-            '<div class="req-answer__q">'
-            f"{esc(item.get('question', ''))}"
-            "</div>"
-            f'<div class="req-answer__a" style="background:{bg};color:{ink}">'
-            f"{esc(item.get('answer', ''))}</div>"
+            f'<div class="req-answer__n">{index:02d}</div>'
+            "<div>"
+            f'<div class="req-answer__q">{esc(item.get("question", ""))}</div>'
+            f'<div class="req-answer__a{cls}">{esc(item.get("answer", ""))}</div>'
             f'<div class="req-answer__d">{esc(item.get("detail", ""))}</div>'
-            "</div>"
+            "</div></div>"
         )
     chunks.append("</div>")
     st.markdown("".join(chunks), unsafe_allow_html=True)
