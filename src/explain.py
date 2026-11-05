@@ -20,14 +20,25 @@ from __future__ import annotations
 
 from datetime import datetime
 
-# 维度键 → 面向用户的名字
+# 维度键 → 面向用户的名字。
+# 每个维度都用「中文问句」而不是术语：读者不需要先懂 bus factor 才能读懂分数。
 DIM_LABELS = {
-    "last_commit": "最后提交距今",
-    "bus_factor": "Bus Factor",
-    "trend": "提交活跃度趋势",
-    "deps": "依赖健康度",
-    "issues": "Issue 响应",
-    "docs": "文档完整度",
+    "last_commit": "还在维护吗",
+    "bus_factor": "靠几个人撑着",
+    "trend": "提交在变多还是变少",
+    "deps": "依赖还在维护吗",
+    "issues": "提问有人回吗",
+    "docs": "有说明书吗",
+}
+
+# 维度键 → 术语原文（给需要对照 SPEC 的读者），界面用小字附在中文名后。
+DIM_TERMS = {
+    "last_commit": "last commit",
+    "bus_factor": "bus factor",
+    "trend": "commit trend",
+    "deps": "dependencies",
+    "issues": "issue response",
+    "docs": "documentation",
 }
 
 # 维度键 → 满分（与 SPEC 3.1-3.6 一致）
@@ -252,44 +263,52 @@ def _explain_deps(m: dict) -> dict:
             "impact": "这一项本次没有真实结论。",
         }
 
-    d = _int(days)
+    # 判分口径：只看运行时依赖。dev 工具单独说明，不参与打分 ——
+    # 理由见 .agents/notes/2026-11-05-deps-runtime-only.md
+    scored_days = rt_days if rt_days is not None else days
+    scored_pkg = rt_pkg if rt_days is not None else oldest
+    scored_scope = "运行时依赖" if rt_days is not None else "全部依赖"
+
+    d = _int(scored_days)
     if d >= 730:
         band = "超过 730 天（两年）"
-        mech = "规则取所有依赖里最老的那个作为最弱环节：只要有依赖两年没更新，就给 0/15。"
+        mech = f"规则取{scored_scope}里最老的那个作为最弱环节：两年没更新就给 0/15。"
     elif d >= 365:
         band = "365–729 天（一至两年）"
-        mech = "规则取最老依赖：一年以上没更新给 5/15。"
+        mech = f"规则取{scored_scope}里最老的：一年以上没更新给 5/15。"
     elif d >= 180:
         band = "180–364 天（半年到一年）"
-        mech = "规则取最老依赖：半年以上没更新给 10/15。"
+        mech = f"规则取{scored_scope}里最老的：半年以上没更新给 10/15。"
     else:
         band = "不到 180 天"
-        mech = "规则取最老依赖：全部在半年内更新过，给满 15/15。"
+        mech = f"规则取{scored_scope}里最老的：全部在半年内更新过，给满 15/15。"
 
-    fact = f"清单 {file} 里 {count} 个依赖，最老的是 {oldest}，已经 {d} 天没发布新版本（{band}）。"
+    fact = (
+        f"清单 {file} 里 {count} 个依赖；{scored_scope}里最老的是 {scored_pkg}，"
+        f"已经 {d} 天没发布新版本（{band}）。"
+    )
 
-    # 这一层是「人性化」的关键：区分这条扣分到底伤不伤运行时
-    if scope == "dev":
-        fact += " 注意它属于开发/文档工具，不在运行时路径上。"
-        if rt_pkg and rt_days is not None:
-            impact = (
-                f"好消息：真正的运行时依赖里最老的是 {rt_pkg}（{rt_days} 天），风险比总分看起来小。"
-                "这条扣分主要来自工具链，不影响运行时，也不影响你部署这个项目。"
-            )
-        else:
-            impact = "这条扣分来自工具链，不影响运行时；但它停更意味着你的构建脚本可能某天装不上。"
+    # dev 依赖不参与打分，但仍然要如实告知它是技术债
+    if scope == "dev" and rt_pkg and _int(days) >= 365:
+        fact += f" 另有开发/文档工具 {oldest} 已经 {_int(days)} 天没更新，不计入分数。"
+        impact = (
+            f"运行时风险不大：{rt_pkg} 才 {_int(scored_days)} 天。"
+            f"但构建链上的 {oldest} 停更超过一年，某天可能装不上，建议锁版本或换掉。"
+        )
+    elif d < 180:
+        impact = "运行时依赖都在半年内更新过，这一项没有风险。出问题时有上游可修。"
+    elif d < 365:
+        impact = "有运行时依赖半年以上没更新。它不会立刻坏，但安全补丁可能不再跟进，接手后留意。"
+    elif d < 730:
+        impact = (
+            f"{scored_pkg} 是运行时依赖且一年多没更新：出安全问题时上游大概率不修，"
+            "建议自己 fork 一份锁死版本。"
+        )
     else:
-        fact += " 它是运行时依赖，会直接进到你的部署产物里。"
-        if rt_pkg and rt_pkg != oldest and rt_days is not None and _int(rt_days) < d:
-            impact = (
-                "它是运行时依赖，所以这条扣分是真的：出问题时没人修。"
-                f"运行时里最老的是 {rt_pkg}（{rt_days} 天），也一并留意。"
-            )
-        else:
-            impact = (
-                "它是运行时依赖且长期停更：出安全问题时没有上游没人修，"
-                "建议接手后自己 fork 一份锁死，不要指望原作者回补。"
-            )
+        impact = (
+            f"{scored_pkg} 是运行时依赖且两年以上没更新，这是个定时炸弹："
+            "先确认它是否还在关键路径上，能替就替，不能替就 fork 锁死。"
+        )
 
     return {"score": got, "max": 15, "fact": fact, "mechanism": mech, "impact": impact}
 
@@ -456,23 +475,141 @@ def verdict(metrics: dict) -> str:
     days = _int(life.get("days_since_last_commit"))
     bf = _int(authors.get("bus_factor"))
     top = top_deductions(metrics, limit=1)
-    worst = top[0]["label"] if top else "各项均衡"
 
     if mode == "alive":
         head = f"这个项目还活着：{days} 天前还有人提交"
         tail = "，现在接手不会孤立无援。"
     elif mode == "critical":
         head = f"这个项目在承压：{days} 天前还有提交"
-        tail = "，但关键指标已经在退，接手前先把风险点看清。"
+        tail = "，关键指标已经在退，接手前先把风险点看清。"
     else:
         head = f"这个项目已经停了：{days} 天没提交"
         tail = "，现在接手等于做考古。"
 
     if bf == 1:
-        mid = "，但全部维护压在一个人的邮箱上"
+        mid = "，而且就一个人在撑着"
     elif bf <= 0:
         mid = ""
     else:
-        mid = f"，bus factor 是 {bf}"
+        mid = f"，{bf} 个人分担了大部分提交"
 
-    return f"{head}{mid}{tail} 当前最大失分项是「{worst}」。"
+    base = f"{head}{mid}{tail}"
+
+    # 满分时「最大失分项」是空话，必须换一种说法
+    if not top:
+        return base + "六项全部满分 —— 没有任何可改进的维度，这在真实项目里少见，值得复核数据来源。"
+
+    worst = top[0]
+    # 扣分很少时也别说「最大失分项」，那会误导读者以为项目有问题
+    if worst["lost"] <= 3:
+        return base + f"六项几乎满分（只在「{worst['label']}」上少 {worst['lost']} 分），不需要特别处理。"
+
+    return base + f"当前最需要关注的是「{worst['label']}」（少 {worst['lost']} 分）。"
+
+
+# ── 三个实际问题 ────────────────────────────────────────────────────────────
+# 前面所有维度都在回答这三个问题。把答案直接摆出来，读者不必自己拼。
+# 每条都是 {question, answer, detail, tone}，tone 取 ok / warn / bad / neutral。
+def practical_answers(metrics: dict) -> list[dict]:
+    """把六维指标翻译成接手前真正会问的三件事。"""
+    life = metrics.get("life") or {}
+    authors = metrics.get("authors") or {}
+    docs = metrics.get("docs") or {}
+    deps = metrics.get("deps") or {}
+    score = metrics.get("score") or {}
+
+    days = _int(life.get("days_since_last_commit"))
+    bf = _int(authors.get("bus_factor"))
+    n_authors = _int(authors.get("total"))
+    top = authors.get("top") or []
+    top1 = top[0] if top else {}
+    top1_name = (top1.get("name") or "").strip()
+    top1_share = _float(top1.get("share")) * 100
+    mode = score.get("mode") or "dead"
+
+    out: list[dict] = []
+
+    # ① 还能用吗 ── 关心的是「现在接手会不会踩在废墟上」
+    if days <= 30:
+        answer, tone = "可以用，作者还在", "ok"
+        detail = f"最后一次提交在 {days} 天前。"
+    elif days <= 180:
+        answer, tone = "能用，但没人更新了", "warn"
+        detail = f"最后一次提交在 {days} 天前，半年内没有新动作。"
+    elif days <= 365:
+        answer, tone = "能用，但基本等于冻结", "warn"
+        detail = f"最后一次提交在 {days} 天前，接近一年没动。"
+    else:
+        answer, tone = "不要指望它继续演进", "bad"
+        detail = f"最后一次提交在 {days} 天前，超过一年。它现在是一个静态遗产。"
+    if mode == "dead":
+        detail += " 建议只把它当参考实现，不要在其上做新功能。"
+    out.append({"question": "这东西我还能用吗", "answer": answer, "detail": detail, "tone": tone})
+
+    # ② 出事了找谁 ── 关心的是「关键人依赖」，这是本产品的核心价值
+    # 但项目已经停更时，「风险分散」是种误导：没有人可以被找到，分散也就没有意义。
+    if mode == "dead":
+        who_now = "；".join(
+            f"{a.get('name')}（{_float(a.get('share')) * 100:.0f}%）" for a in top[:2] if a.get("name")
+        )
+        answer, tone = "现在没人可以找", "bad"
+        detail = f"最后一次提交在 {days} 天前，维护者已经离场。" + (
+            f"历史上主要是 {who_now} 在改这份代码 —— 只能从提交记录里找线索，别指望回信。" if who_now else ""
+        )
+    elif bf <= 0:
+        answer, tone = "查不到维护者", "neutral"
+        detail = "样本里没有可识别的人工提交，需要直接问团队谁在管。"
+    elif bf == 1:
+        who = f"{top1_name}（{top1_share:.0f}%）" if top1_name else "同一个人"
+        answer, tone = "只有一个能改的人", "bad"
+        detail = f"全部维护压在 {who} 身上。这个人离开，项目即终止 —— 先把他手上的隐性约定问出来。"
+    elif bf == 2:
+        answer, tone = "靠两个人对撑", "warn"
+        detail = f"两人合计超过 60% 提交（第一人 {top1_share:.0f}%）。走掉一个，另一个就是新的单点。"
+    elif bf == 3:
+        answer, tone = "三个人分担，仍是小圈子", "warn"
+        detail = f"累计到 60% 需要 3 个人，第一人占 {top1_share:.0f}%。交接名单至少要覆盖这三人。"
+    else:
+        answer, tone = "风险分散，不是单点", "ok"
+        detail = (
+            f"{n_authors} 位贡献者，凑够 60% 需要 {bf} 个人，第一人只占 {top1_share:.0f}%。"
+            "人员流动不会立刻造成真空。"
+        )
+    out.append({"question": "出事了该找谁", "answer": answer, "detail": detail, "tone": tone})
+
+    # ③ 我现在先做什么 ── 直接给一个动作，不给清单
+    first_action = ""
+    if deps.get("status") == "ok" and _int(deps.get("oldest_days")) >= 365:
+        scope = deps.get("oldest_scope") or "runtime"
+        if scope == "runtime":
+            first_action = (
+                f"先处理依赖：{deps.get('oldest_pkg')} 已经 "
+                f"{_int(deps.get('oldest_days'))} 天没更新，它是运行时依赖，是个定时炸弹。"
+            )
+        else:
+            rt = deps.get("oldest_runtime_pkg")
+            first_action = (
+                f"依赖里最老的是文档工具 {deps.get('oldest_pkg')}（{_int(deps.get('oldest_days'))} 天），"
+                f"不影响运行；真正要盯的是运行时依赖 {rt or '（未采集）'}。先跑通测试再动代码。"
+            )
+    elif bf == 1:
+        first_action = (
+            f"先做知识转移：让 {top1_name or '主要维护者'} 把核心模块的设计意图、"
+            "未完成分支、部署方式讲一遍并录下来。这比读代码快十倍。"
+        )
+    elif not docs.get("has_readme"):
+        first_action = "先补一份 README：现在连它做什么、怎么跑都得靠猜。你自己跑通一遍就是最好的文档。"
+    elif _int(days) > 365:
+        first_action = "先跑一遍现有测试，确认它在你手上还能启动。跑不起来的话，先修环境再谈业务。"
+    else:
+        first_action = "先跑通测试建立基线，再从「雷区」里挑体量最大的文件读一遍 —— 那是改动风险最高的地方。"
+    out.append(
+        {
+            "question": "我接手后先做什么",
+            "answer": "一个动作，不是一张清单",
+            "detail": first_action,
+            "tone": "neutral",
+        }
+    )
+
+    return out

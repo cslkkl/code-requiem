@@ -365,7 +365,10 @@ def dim_rows(metrics: dict) -> list[dict]:
         rows.append(
             {
                 "key": key,
-                "name": str(part.get("label") or fallback_name),
+                # 优先用「中文问法」（label_plain），读者不需要先懂术语。
+                # label 是 SPEC 里的正式名称，留在解剖面板里备查。
+                "name": str(part.get("label_plain") or part.get("label") or fallback_name),
+                "spec_name": str(part.get("label") or fallback_name),
                 "score": score,
                 "max": mx,
                 "ratio": ratio,
@@ -388,7 +391,8 @@ def dim_rows(metrics: dict) -> list[dict]:
         rows.append(
             {
                 "key": str(key),
-                "name": str(part.get("label") or key),
+                "name": str(part.get("label_plain") or part.get("label") or key),
+                "spec_name": str(part.get("label") or key),
                 "score": score,
                 "max": mx,
                 "ratio": ratio,

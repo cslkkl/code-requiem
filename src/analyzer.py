@@ -180,6 +180,7 @@ def _empty_result(repo: dict, error: dict, elapsed: float = 0.0) -> dict:
         "repo": repo,
         "sampled": False,
         "sample_note": None,
+        "overrides": [],
         "life": {
             "first_commit": "",
             "last_commit": "",
@@ -546,6 +547,29 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
         "truncated": len(commits) >= fetch_api.MAX_PAGES * fetch_api.PER_PAGE,
     }
 
+    # ── 用 commit_count 的窗口计数校正趋势 ────────────────────────────────
+    # 300 条提交样本在热门仓库上会全部落在最近半年，于是 recent=300 / prev=0，
+    # 比值算出来是 300.00 —— 这不是「增长 300 倍」，而是样本被截断。
+    # 用 GitHub 的 since/until 计数（一次请求拿精确总数）才是真的 6/6 月对比。
+    progress("正在校正趋势窗口…")
+    recent_total = github_api.commit_count(owner, name, since=now - timedelta(days=182))
+    prev_total = github_api.commit_count(
+        owner, name, since=now - timedelta(days=364), until=now - timedelta(days=182)
+    )
+    if recent_total is not None:
+        hist["recent_6m"] = recent_total
+    if prev_total is not None:
+        hist["previous_6m"] = prev_total
+    grand_total = github_api.commit_count(owner, name)
+    if grand_total:
+        hist["total_commits"] = grand_total
+        hist["truncated"] = grand_total > len(commits)
+    # contributors 全量分布（比 300 条样本准，见 _analyze_via_api 里的说明）
+    contribs = github_api.contributors(owner, name)
+    if contribs and contribs.get("total"):
+        hist["contributors"] = contribs
+    trend_corrected = recent_total is not None and prev_total is not None
+
     progress("正在计算健康分…")
     metrics = _build_metrics(
         repo=repo,
@@ -564,7 +588,8 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
         ),
         repo_path=root,
         elapsed=time.perf_counter() - t0,
-        api_enriched=True,  # API 路径本身就是靠 API 拿的数据
+        # 趋势窗口是否真的拿到了精确计数，决定要不要在数据完整性里标注
+        api_enriched=bool(trend_corrected),
     )
     metrics["data_source"] = "github-api"
     metrics["repo_meta"] = meta
@@ -673,7 +698,24 @@ def _build_metrics(
     s_trend, d_trend, ratio = scoring.score_trend(hist["recent_6m"], hist["previous_6m"], insufficient)
 
     # ── 维度 4：依赖 ──────────────────────────────────────────────────────
-    s_deps, d_deps = scoring.score_deps(deps_info.get("oldest_days"), deps_info.get("status", "none"))
+    # 口径修正（标定结论）：只对**运行时依赖**取最老，不让开发/文档工具参与打分。
+    # SPEC 3.4 原文是「取所有依赖中最老的那个」，但实测 50 个真实仓库后发现：
+    # sphinx / pytest / pre-commit 这类工具更新频率天然低于运行时库，
+    # 于是几乎每个成熟 Python 项目都被它拖到 0/15（flask 2679 天、httpx 796 天），
+    # 而碰巧运行时依赖最老的项目反而满分 —— 这一维退化成抽奖，失去区分度。
+    # 从产品意图看，「依赖健康度」关心的是运行时会踩到的雷，不是文档能不能构建。
+    deps_status = deps_info.get("status", "none")
+    deps_scored_days = deps_info.get("oldest_runtime_days")
+    deps_scored_scope = "运行时依赖"
+    if deps_scored_days is None:
+        # 没有区分出 runtime（旧清单 / 解析失败）时退回全量，保持与 SPEC 一致
+        deps_scored_days = deps_info.get("oldest_days")
+        deps_scored_scope = "全部依赖"
+    s_deps, d_deps = scoring.score_deps(deps_scored_days, deps_status)
+    if deps_status == "ok" and deps_info.get("oldest_days") is not None:
+        # 把「判分用的口径」写进说明，避免读者以为 15 分等于所有依赖都新
+        d_deps += f"（按{deps_scored_scope}计；全量最老为 {deps_info.get('oldest_pkg')} "
+        d_deps += f"{deps_info.get('oldest_days')} 天）"
 
     # ── 维度 5：issue ─────────────────────────────────────────────────────
     s_iss, d_iss = scoring.score_issues(
@@ -687,6 +729,31 @@ def _build_metrics(
         docs_info["has_install"],
         docs_info["has_example"],
     )
+
+    # 死亡否决：停更项目的历史指标不该把它拉回「承压」──────────────
+    # 标定 49 个真实仓库发现的最严重问题：
+    #   facebookarchive/caffe2 已经 2960 天没提交，却拿到 44 分（承压）——
+    #   因为 bus_factor=12 给满 25 分、历史上的 issue 响应快又给满 10 分。
+    #   一个死了八年的项目被评为「承压」，等于产品的核心判断错了。
+    # 规则：最后提交超过 180 天，总分不得高于 critical 上限；超过 730 天，直接 dead。
+    # 理由：六维里只有「还在维护吗」带时间信息，其余五维衡量的是历史质量。
+    #       历史再辉煌，也不能证明它现在活着。
+    total = s_last + s_bf + s_trend + s_deps + s_iss + s_doc
+    overrides: list[str] = []
+    if days_since > 730:
+        cap = scoring.CRITICAL_MIN - 1  # 29，落进 dead
+        if total > cap:
+            overrides.append(
+                f"最后提交在 {days_since} 天前（超过两年），历史指标再好也不算活着：总分封顶 {cap}"
+            )
+            total = cap
+    elif days_since > 180:
+        cap = scoring.ALIVE_MIN - 1  # 69，落进 critical
+        if total > cap:
+            overrides.append(f"最后提交在 {days_since} 天前（超过半年），不能判为存活：总分封顶 {cap}")
+            total = cap
+    total = max(0, min(100, int(total)))
+    mode = scoring.decide_mode(total)
 
     # ── 数据完整性：哪些维度是「拿不到数据」而不是「数据确实是差」──────────
     # 这两件事对用户的意义完全不同：
@@ -736,16 +803,13 @@ def _build_metrics(
                 continue
             stale_final.append({"path": f, "days_untouched": -1, "commits": -1, "loc": 0})
 
-    total = s_last + s_bf + s_trend + s_deps + s_iss + s_doc
-    total = max(0, min(100, int(total)))
-    mode = scoring.decide_mode(total)
-
     metrics = {
         "ok": True,
         "error": None,
         "repo": {k: repo[k] for k in ("input", "host", "owner", "name", "url", "is_local")},
         "sampled": sampled,
         "sample_note": sample_note,
+        "overrides": overrides,
         "data_quality": {
             "complete": not unavailable,
             "unavailable_dimensions": unavailable,
@@ -830,23 +894,44 @@ def _build_metrics(
                     "score": s_last,
                     "max": scoring.LAST_COMMIT_MAX,
                     "label": "最后提交距今",
+                    "label_plain": explain.DIM_LABELS.get("last_commit", "还在维护吗"),
                     "detail": d_last,
                 },
                 "bus_factor": {
                     "score": s_bf,
                     "max": scoring.BUS_FACTOR_MAX,
                     "label": "Bus Factor",
+                    "label_plain": explain.DIM_LABELS.get("bus_factor", "靠几个人撑着"),
                     "detail": d_bf,
                 },
                 "trend": {
                     "score": s_trend,
                     "max": scoring.TREND_MAX,
                     "label": "提交活跃度趋势",
+                    "label_plain": explain.DIM_LABELS.get("trend", "提交在变多还是变少"),
                     "detail": d_trend,
                 },
-                "deps": {"score": s_deps, "max": scoring.DEPS_MAX, "label": "依赖健康度", "detail": d_deps},
-                "issues": {"score": s_iss, "max": scoring.ISSUES_MAX, "label": "Issue 响应", "detail": d_iss},
-                "docs": {"score": s_doc, "max": scoring.DOCS_MAX, "label": "文档完整度", "detail": d_doc},
+                "deps": {
+                    "score": s_deps,
+                    "max": scoring.DEPS_MAX,
+                    "label": "依赖健康度",
+                    "label_plain": explain.DIM_LABELS.get("deps", "依赖还在维护吗"),
+                    "detail": d_deps,
+                },
+                "issues": {
+                    "score": s_iss,
+                    "max": scoring.ISSUES_MAX,
+                    "label": "Issue 响应",
+                    "label_plain": explain.DIM_LABELS.get("issues", "提问有人回吗"),
+                    "detail": d_iss,
+                },
+                "docs": {
+                    "score": s_doc,
+                    "max": scoring.DOCS_MAX,
+                    "label": "文档完整度",
+                    "label_plain": explain.DIM_LABELS.get("docs", "有说明书吗"),
+                    "detail": d_doc,
+                },
             },
         },
         "elapsed_sec": round(elapsed, 2),
@@ -859,10 +944,13 @@ def _build_metrics(
         metrics["explain"] = explain.explain_dimensions(metrics)
         metrics["verdict"] = explain.verdict(metrics)
         metrics["top_deductions"] = explain.top_deductions(metrics, limit=3)
+        # 三个实际问题：读者不需要先懂六维才能读懂结论
+        metrics["answers"] = explain.practical_answers(metrics)
     except Exception:
         metrics["explain"] = {}
         metrics["verdict"] = ""
         metrics["top_deductions"] = []
+        metrics["answers"] = []
 
     metrics["deterministic_key"] = _fingerprint(metrics)
     return metrics

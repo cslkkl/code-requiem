@@ -462,6 +462,36 @@ html,body,.stApp,[data-testid="stMarkdownContainer"]{
   font-family:var(--req-mono);font-size:.62rem;letter-spacing:.1em;
   color:var(--req-accent);margin-right:8px;font-weight:500;text-transform:uppercase;
 }
+/* 术语原文：附在中文问法后面，需要对照 SPEC 的人才看 */
+.req-dim__term{
+  font-family:var(--req-mono);font-size:.64rem;font-style:normal;
+  color:var(--req-ink-4);margin-left:8px;letter-spacing:.02em;
+}
+.req-dim__score i{
+  font-style:normal;font-size:.72rem;color:var(--req-ink-4);margin-left:1px;
+}
+
+/* ── 三个实际问题：结果页最重要的区块 ─────────────────────────────────── */
+.req-answers{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+}
+@media (max-width:900px){.req-answers{grid-template-columns:1fr;}}
+.req-answer{
+  border:1px solid var(--req-line);border-radius:12px;background:var(--req-surface);
+  padding:20px 20px 18px;display:flex;flex-direction:column;gap:9px;
+}
+.req-answer__q{
+  font-family:var(--req-mono);font-size:.68rem;letter-spacing:.08em;
+  color:var(--req-ink-3);
+}
+.req-answer__a{
+  display:inline-block;align-self:flex-start;
+  font-size:.98rem;font-weight:600;line-height:1.35;
+  padding:6px 13px;border-radius:999px;letter-spacing:-.005em;
+}
+.req-answer__d{
+  font-size:.82rem;line-height:1.72;color:var(--req-ink-2);
+}
 
 /* ── 文档卡 ───────────────────────────────────────────────────────────── */
 .req-doc-head{
@@ -908,6 +938,13 @@ def render_top_alerts(result: dict | None) -> None:
                 unsafe_allow_html=True,
             )
 
+    # 规则性修正：停更项目被总分封顶时必须明说，不能让读者以为这是自然得出的分数
+    for reason in metrics.get("overrides") or []:
+        st.markdown(
+            notice("score capped", f"<b>总分已封顶</b> · {esc(reason)}", "warn"),
+            unsafe_allow_html=True,
+        )
+
     if narrative.get("degraded"):
         reason = narrative.get("degraded_reason") or "LLM 不可达"
         st.markdown(
@@ -1005,6 +1042,11 @@ def render_score_hero(metrics: dict, narrative: dict, elapsed_total: float, *, c
 
 
 def render_dims(metrics: dict) -> None:
+    """六维明细：默认一行一维度，只给「问题 / 分数 / 一句话」。
+
+    之前每项下面固定铺「事实 + 为什么 + 对你」三行，六项就是 18 行文字，
+    读者扫不动。改成一行一维度，展开才看理由 —— 结论先给，细节按需。
+    """
     rows = fmt.dim_rows(metrics)
     if not rows:
         st.markdown(
@@ -1013,38 +1055,54 @@ def render_dims(metrics: dict) -> None:
         )
         return
 
+    terms: dict = {}
+    try:
+        from src.explain import DIM_TERMS as _T
+
+        terms = _T
+    except Exception:
+        pass
+
     chunks = ['<div class="req-dims">']
     for row in rows:
         width = max(0, min(100, row["pct"]))
-        color = row["tone"]
-        # 低分维度用锈红提示，避免所有条都是一个颜色
+        color = "#346538"
         if row["ratio"] < 0.34:
             color = "#9F2F2D"
         elif row["ratio"] < 0.67:
             color = "#8A6209"
 
-        # 三段式解释：观察 → 机制 → 对你的影响。
-        # explain 层没给时退回单段 detail，保证任何情况下都有话说。
-        body = f'<div class="req-dim__detail">{esc(row["detail"])}</div>'
-        if row.get("mechanism") or row.get("impact"):
-            parts = [f'<div class="req-dim__why"><b>为什么</b> {esc(row["mechanism"])}</div>']
-            if row.get("impact"):
-                parts.append(f'<div class="req-dim__why"><b>对你</b> {esc(row["impact"])}</div>')
-            body += "".join(parts)
+        # 一行摘要：不用 explain 的三段，用最紧的那句事实
+        one_line = row.get("fact") or row.get("detail") or ""
 
         chunks.append(
             '<div class="req-dim">'
             '<div class="req-dim__top">'
-            f'<span class="req-dim__name">{esc(row["name"])}</span>'
+            f'<span class="req-dim__name">{esc(row["name"])}'
+            f'<em class="req-dim__term">{esc(terms.get(row["key"], ""))}</em></span>'
             f'<span class="req-dim__score" style="color:{color}">'
-            f"{row['score']} / {row['max']}</span>"
+            f"{row['score']}<i>/{row['max']}</i></span>"
             "</div>"
             '<div class="req-dim__track">'
             f'<div class="req-dim__fill" style="width:{width}%;background:{color}"></div>'
-            "</div>" + body + "</div>"
+            "</div>"
+            f'<div class="req-dim__detail">{esc(one_line)}</div>'
+            "</div>"
         )
     chunks.append("</div>")
     st.markdown("".join(chunks), unsafe_allow_html=True)
+
+    # 理由放进折叠：想看的人点开，不想看的人不被挡住
+    with st.expander("每一维为什么是这个分（规则 + 对你的影响）", expanded=False):
+        for row in rows:
+            if not (row.get("mechanism") or row.get("impact")):
+                continue
+            st.markdown(f"**{row['name']} · {row['score']}/{row['max']}**")
+            if row.get("mechanism"):
+                st.markdown(f"- 规则：{row['mechanism']}")
+            if row.get("impact"):
+                st.markdown(f"- 对你：{row['impact']}")
+            st.markdown("")
 
 
 def render_metric_cards(metrics: dict) -> None:
@@ -1061,6 +1119,40 @@ def render_metric_cards(metrics: dict) -> None:
                     help=card["help"],
                     border=True,
                 )
+
+
+def render_answers(metrics: dict) -> None:
+    """三个实际问题 —— 结果页最重要的区块。
+
+    读者不关心我们的六维模型，他关心：这东西还能用吗、出事了找谁、我先做什么。
+    这三条答案直接摆在分数下面，六维指标退到它后面当证据。
+    """
+    answers = metrics.get("answers") or []
+    if not answers:
+        return
+
+    tone_ink = {
+        "ok": ("#EDF3EC", "#346538"),
+        "warn": ("#FBF3DB", "#8A6209"),
+        "bad": ("#FDEBEC", "#9F2F2D"),
+        "neutral": ("#F7F6F3", "#5F5E5B"),
+    }
+
+    chunks = ['<div class="req-answers">']
+    for item in answers:
+        bg, ink = tone_ink.get(str(item.get("tone")), tone_ink["neutral"])
+        chunks.append(
+            '<div class="req-answer">'
+            '<div class="req-answer__q">'
+            f"{esc(item.get('question', ''))}"
+            "</div>"
+            f'<div class="req-answer__a" style="background:{bg};color:{ink}">'
+            f"{esc(item.get('answer', ''))}</div>"
+            f'<div class="req-answer__d">{esc(item.get("detail", ""))}</div>'
+            "</div>"
+        )
+    chunks.append("</div>")
+    st.markdown("".join(chunks), unsafe_allow_html=True)
 
 
 def render_document(metrics: dict, narrative: dict) -> None:
@@ -1322,13 +1414,28 @@ def narrative_phase(metrics: dict, *, forced: bool = False) -> tuple[dict, float
 
 
 def render_result_head(metrics: dict, narrative: dict, timings: dict, *, cached: bool = False) -> None:
-    """结果页上半部分：总分 + 六维 + 关键指标。指标一落地就能画。"""
+    """结果页上半部分，按「先结论、后证据」排序。
+
+    顺序就是读者的问题顺序：
+      1. 多少分、什么状态（总分卡）
+      2. 所以我该关心什么（三个实际问题的答案）
+      3. 凭什么这么判（六维，每维一行）
+      4. 细节数字（指标卡，折叠）
+    """
     render_score_hero(metrics, narrative, sum(timings.values()), cached=cached)
-    section("六维拆解", fmt.band_note(metrics))
+
+    answers = metrics.get("answers") or []
+    if answers:
+        section("所以，我该关心什么", "三句话回答接手前真正会问的事")
+        render_answers(metrics)
+
+    section("凭什么这么判", fmt.band_note(metrics))
     render_dims(metrics)
-    section("关键指标", "点击标签可看口径")
-    render_metric_cards(metrics)
-    section("生成文档", fmt.doc_kicker(metrics))
+
+    with st.expander("原始数字（8 项关键指标）", expanded=False):
+        render_metric_cards(metrics)
+
+    section("交接清单", fmt.doc_kicker(metrics))
 
 
 def render_result(result: dict) -> None:

@@ -218,9 +218,11 @@ class TestDepsScope(unittest.TestCase):
             }
         )
         e = explain.explain_dimensions(m)["deps"]
+        # 口径：dev 工具不参与打分，但必须如实说明它是技术债
         self.assertIn("开发/文档工具", e["fact"])
-        self.assertIn("不影响运行时", e["impact"])
+        self.assertIn("不计入分数", e["fact"])
         self.assertIn("torch", e["impact"])
+        self.assertIn("锁版本", e["impact"])
 
     def test_runtime_dep_old_is_serious(self):
         m = _base_metrics()
@@ -235,7 +237,7 @@ class TestDepsScope(unittest.TestCase):
         )
         e = explain.explain_dimensions(m)["deps"]
         self.assertIn("运行时依赖", e["fact"])
-        self.assertIn("没人修", e["impact"])
+        self.assertIn("定时炸弹", e["impact"])
 
     def test_timeout_says_not_real_conclusion(self):
         m = _base_metrics()
@@ -322,7 +324,7 @@ class TestSummary(unittest.TestCase):
         m["explain"] = explain.explain_dimensions(m)
         v = explain.verdict(m)
         self.assertIn("承压", v)
-        self.assertIn("依赖健康度", v)
+        self.assertIn("依赖", v)
 
     def test_verdict_dead_project(self):
         m = _base_metrics()
