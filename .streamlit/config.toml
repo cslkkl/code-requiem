@@ -4,26 +4,25 @@
 # 没有卡片、没有药丸、没有衬线 —— 这三样是「AI 生成界面」最典型的痕迹。
 #
 # 圆角全部归零：编辑排版靠线条和留白组织信息，不靠圆角容器。
-# 不引用任何外部字体或 CDN：字体栈全部落在系统已装字体上，
-# Windows 与 Linux（部署环境）都能退化为可读字体。
+# 字体以 WOFF2 自托管在 assets/fonts/，运行时不请求外部 CDN。
 
 [theme]
 base = "light"
-primaryColor = "#15140F"            # 主按钮与链接：近黑
-backgroundColor = "#F4F4F2"         # 画布：冷调中性灰白，不用米黄
+primaryColor = "#171716"            # 主按钮与链接：近黑
+backgroundColor = "#F7F7F5"         # 画布：中性灰白
 secondaryBackgroundColor = "#EBEBE8"
-textColor = "#15140F"
-linkColor = "#8E3223"               # 氧化红，唯一强调色
-borderColor = "#D8D5CE"
-codeBackgroundColor = "#E7E5E0"
-codeTextColor = "#3A3833"
+textColor = "#171716"
+linkColor = "#8A3323"               # 氧化红，唯一强调色
+borderColor = "#D8D8D3"
+codeBackgroundColor = "#E6E6E1"
+codeTextColor = "#3F3F3C"
 
 # 正文与标题都用无衬线，靠字重与字号拉层级。
 # 之前标题用中文衬线（宋体系）—— 那是 LLM 做「有文化感」界面时的默认套路，
 # 在中文界面里尤其明显，读起来像 PPT 而不是工具。
-font = "'Segoe UI Variable Display','Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',system-ui,sans-serif"
-headingFont = "'Segoe UI Variable Display','Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',system-ui,sans-serif"
-codeFont = "'Cascadia Mono','JetBrains Mono','SF Mono','Consolas','DejaVu Sans Mono',ui-monospace,monospace"
+font = "'Geist',system-ui,'Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif"
+headingFont = "'Geist',system-ui,'Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif"
+codeFont = "'Geist Mono','Cascadia Mono','JetBrains Mono','SF Mono','Consolas','DejaVu Sans Mono',monospace"
 
 baseFontSize = 15
 baseRadius = "0px"
@@ -32,7 +31,7 @@ showWidgetBorder = false
 showSidebarBorder = true
 
 [theme.sidebar]
-backgroundColor = "#F4F4F2"
+backgroundColor = "#F7F7F5"
 secondaryBackgroundColor = "#EBEBE8"
 
 [server]

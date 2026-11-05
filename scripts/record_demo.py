@@ -217,16 +217,10 @@ def _build_speedramp_filter(waits: list[tuple[float, float]], total: float, spee
         if abs(rate - 1.0) < 1e-6:
             parts.append(f"[0:v]trim=start={a:.3f}:end={b:.3f},setpts=PTS-STARTPTS[{label}]")
         else:
-            parts.append(
-                f"[0:v]trim=start={a:.3f}:end={b:.3f},"
-                f"setpts=(PTS-STARTPTS)/{rate:.3f}[{label}]"
-            )
+            parts.append(f"[0:v]trim=start={a:.3f}:end={b:.3f},setpts=(PTS-STARTPTS)/{rate:.3f}[{label}]")
         labels.append(f"[{label}]")
     return (
-        ";".join(parts)
-        + ";"
-        + "".join(labels)
-        + f"concat=n={len(labels)}:v=1:a=0,"
+        ";".join(parts) + ";" + "".join(labels) + f"concat=n={len(labels)}:v=1:a=0,"
         "scale=1440:900:flags=lanczos,fps=30,format=yuv420p[out]"
     )
 
@@ -264,21 +258,44 @@ def main() -> int:
 
     if waits and saved > 0.5:
         cmd = [
-            "ffmpeg", "-y", "-loglevel", "error",
-            "-i", str(raw),
-            "-filter_complex", _build_speedramp_filter(waits, total, args.speed),
-            "-map", "[out]",
-            "-c:v", "libx264", "-preset", "medium", "-crf", "21",
-            "-movflags", "+faststart",
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-i",
+            str(raw),
+            "-filter_complex",
+            _build_speedramp_filter(waits, total, args.speed),
+            "-map",
+            "[out]",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "medium",
+            "-crf",
+            "21",
+            "-movflags",
+            "+faststart",
             str(FINAL),
         ]
     else:
         cmd = [
-            "ffmpeg", "-y", "-loglevel", "error",
-            "-i", str(raw),
-            "-vf", "scale=1440:900:flags=lanczos,fps=30,format=yuv420p",
-            "-c:v", "libx264", "-preset", "medium", "-crf", "21",
-            "-movflags", "+faststart",
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-i",
+            str(raw),
+            "-vf",
+            "scale=1440:900:flags=lanczos,fps=30,format=yuv420p",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "medium",
+            "-crf",
+            "21",
+            "-movflags",
+            "+faststart",
             str(FINAL),
         ]
 
@@ -289,9 +306,18 @@ def main() -> int:
         return 4
 
     dur = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-         "-of", "default=nw=1:nk=1", str(FINAL)],
-        capture_output=True, text=True,
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=nw=1:nk=1",
+            str(FINAL),
+        ],
+        capture_output=True,
+        text=True,
     ).stdout.strip()
     try:
         secs = float(dur)
