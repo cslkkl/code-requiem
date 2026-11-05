@@ -35,9 +35,9 @@ MAX_BODY_BYTES = 3 * 1024 * 1024
 # 缓存也提升确定性 —— 同一仓库连续跑两次拿到的是同一份数据。
 _CACHE_DIR = Path(os.environ.get("REQUIEM_CACHE_DIR", str(Path.home() / ".cache" / "code-requiem")))
 _CACHE_TTL_SEC = 7 * 24 * 3600
-# 失败结果只缓存 6 小时：既能避免「连续两次运行一次成功一次失败」造成的分数漂移，
-# 又不会把一次偶发网络故障永久固化。
-_NEG_CACHE_TTL_SEC = 6 * 3600
+# 失败结果只缓存 5 分钟：够吸收同一次分析里的重复查询，
+# 又不至于让一次网络抖动在几小时里把某个包永久判成「查不到」。
+_NEG_CACHE_TTL_SEC = 5 * 60
 
 
 def _cache_path(url: str) -> Path:
@@ -53,7 +53,14 @@ def _cache_get(key: str):
         if not p.is_file():
             return None
         data = json.loads(p.read_text(encoding="utf-8"))
-        ttl = _CACHE_TTL_SEC if data.get("days") is not None else _NEG_CACHE_TTL_SEC
+        # 负结果（days is None）只保留很短时间：一次网络抖动不应该让这个包
+        # 在之后 6 小时里一直被当成「查不到」。实测出现过 certifi / httpcore /
+        # anyio / idna 四个常用包被一次抖动固化，导致 httpx 的运行时依赖
+        # 全部「查不到」，deps 维度直接掉到 0 分。
+        if data.get("days") is None:
+            ttl = _NEG_CACHE_TTL_SEC
+        else:
+            ttl = _CACHE_TTL_SEC
         if time.time() - p.stat().st_mtime > ttl:
             return None
         return data
