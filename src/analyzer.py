@@ -61,6 +61,12 @@ for _stream in (sys.stdout, sys.stderr):
     except Exception:
         pass
 
+# ── 全局时间预算 ────────────────────────────────────────────────────────────
+# 验收要求「贴入任意公开仓库，90 秒内出结果」。实测最坏情况能到 164 秒：
+#   clone 重试 2×21s + API 约 18 次请求 + 依赖查询 25s 预算。
+# 因此 75 秒后不再启动新的可选步骤，把剩余时间留给收尾。
+BUDGET_SEC = 75.0
+
 # ── 错误类型：SPEC 第 5 章 7 种边界情况 ──────────────────────────────────────
 ERROR_MESSAGES = {
     "not_found": "无法访问该仓库，请确认它是公开的，且地址没有拼错",
@@ -222,11 +228,20 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
     """分析任意公开 Git 仓库，返回 CONTRACT.md 第 2 节定义的结构。
 
     progress: 可选回调 progress(stage: str)，用于界面显示进度。
+
+    时间预算：整条链路有 90 秒的软上限（`BUDGET_SEC`）。实测最坏情况
+    （github.com 不可达 + fallback API + 依赖查询慢）能到 164 秒，
+    而验收要求是「贴入任意公开仓库，90 秒内出结果」。
+    所以每个可选步骤开跑前都问一次 `_out_of_time()`，超了就跳过低优先级补全，
+    用已经拿到的数据出结果 —— 宁可少一项补齐，也不能让用户等到超时。
     """
     t0 = time.perf_counter()
     now = now or datetime.now(UTC)
     if now.tzinfo is None:
         now = now.replace(tzinfo=UTC)
+
+    def _out_of_time(reserve: float = 0.0) -> bool:
+        return (time.perf_counter() - t0) > (BUDGET_SEC - reserve)
 
     def _p(stage: str):
         if progress:
@@ -269,7 +284,17 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
                 _p("正在浅克隆仓库…")
                 workdir = gm.make_workdir()
                 try:
-                    repo_path = gm.clone_repo(repo["url"], workdir, depth=planned_depth)
+                    # 克隆本身也要受全局预算约束，而且必须给 API 兜底路径留余量。
+                    # 实测：克隆卡 60 秒后再走 API 路径要 40 秒，合计 100 秒，
+                    # 直接冲垮 90 秒目标。所以克隆最多 40 秒、只试 1 次。
+                    clone_timeout = max(15, min(40, int(BUDGET_SEC - (time.perf_counter() - t0) - 35)))
+                    repo_path = gm.clone_repo(
+                        repo["url"],
+                        workdir,
+                        depth=planned_depth,
+                        timeout=clone_timeout,
+                        attempts=1,
+                    )
                 except gm.CloneError as exc:
                     if repo["host"] == "github" and fetch_api.can_use_api():
                         _p("克隆失败，改用 GitHub API 采集…")
@@ -368,12 +393,20 @@ def analyze_repo(url: str, *, now: datetime | None = None, token: str | None = N
         stale = gm.stale_core_files(repo_path, size["code_files"], now=now, limit=8)
 
         _p("正在查询依赖健康度…")
-        deps_info = deps_mod.analyze_deps(repo_path)
+        if _out_of_time(reserve=20):
+            # 依赖查询自带 25 秒预算，超时前不该再启动它 —— 否则会一起冲过 90 秒
+            deps_info = deps_mod.empty_result("skipped")
+            _p("时间预算已用尽，跳过了依赖查询（计中性分）")
+        else:
+            deps_info = deps_mod.analyze_deps(repo_path)
 
         _p("正在查询 issue 响应…")
         # 本地仓库 / 非 GitHub：issue 项按不可用处理（SPEC 5 最后一条）
-        if repo["host"] == "github":
+        if repo["host"] == "github" and not _out_of_time(reserve=12):
             issues_info = issues_mod.analyze_issues(repo["owner"], repo["name"], host="github")
+        elif repo["host"] == "github":
+            issues_info = {"status": "unavailable", "closed_count": 0, "open_count": 0, "median_days": None}
+            _p("时间预算已用尽，跳过了 issue 响应查询")
         else:
             issues_info = {"status": "not_github", "closed_count": 0, "open_count": 0, "median_days": None}
 
@@ -481,6 +514,15 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
         return _empty_result(repo, _err("empty"), time.perf_counter() - t0)
     commits.sort(key=lambda c: c["date"])
 
+    # 下载 tarball 是这条路径上最贵的一步（几 MB 到上百 MB）。
+    # 剩余时间不够就干脆不给用户一个半成品：明确说网络慢，让人重试。
+    if (time.perf_counter() - t0) > (BUDGET_SEC - 30):
+        return _empty_result(
+            repo,
+            _err("network", "网络太慢，90 秒内拿不到代码快照。请重试，或配置 GITHUB_TOKEN 提速"),
+            time.perf_counter() - t0,
+        )
+
     progress("正在下载代码快照…")
     root = fetch_api.download_tarball(owner, name, workdir, branch=meta.get("default_branch"))
     if root is None:
@@ -497,6 +539,10 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
     progress("正在补齐文件级历史…")
     stale: list[dict] = []
     for f in size["code_files"][:8]:
+        # 每个文件一次请求，8 个就是 8 次往返；预算不够就提前收手
+        if (time.perf_counter() - t0) > (BUDGET_SEC - 25):
+            progress("时间预算已用尽，跳过了部分文件级历史")
+            break
         got = fetch_api.file_last_commit_days(owner, name, f, now=now)
         if got is None:
             continue
@@ -509,10 +555,18 @@ def _analyze_via_api(*, repo, now, workdir, t0, progress) -> dict:
     stale.sort(key=lambda x: (-x["commits"], -x["days_untouched"], x["path"]))
 
     progress("正在查询依赖健康度…")
-    deps_info = deps_mod.analyze_deps(root)
+    if (time.perf_counter() - t0) > (BUDGET_SEC - 20):
+        deps_info = deps_mod.empty_result("skipped")
+        progress("时间预算已用尽，跳过了依赖查询（计中性分）")
+    else:
+        deps_info = deps_mod.analyze_deps(root)
 
     progress("正在查询 issue 响应…")
-    issues_info = issues_mod.analyze_issues(owner, name, host="github")
+    if (time.perf_counter() - t0) > (BUDGET_SEC - 12):
+        issues_info = {"status": "unavailable", "closed_count": 0, "open_count": 0, "median_days": None}
+        progress("时间预算已用尽，跳过了 issue 响应查询")
+    else:
+        issues_info = issues_mod.analyze_issues(owner, name, host="github")
 
     # 构造与 git 路径一致的 hist 结构
     cutoff_recent = now - timedelta(days=182)

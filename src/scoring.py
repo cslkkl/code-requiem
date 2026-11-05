@@ -85,7 +85,10 @@ DEPS_NEUTRAL = 8  # 无依赖清单 / 网络失败
 
 
 def score_deps(oldest_days: int | None, status: str) -> tuple[int, str]:
-    """status: "ok" | "timeout" | "none" | "unsupported" """
+    """status: "ok" | "timeout" | "none" | "unsupported" | "skipped" """
+    if status == "skipped":
+        # 时间预算用尽时跳过查询：这是我们的取舍，不是项目的问题，按中性分
+        return DEPS_NEUTRAL, "时间预算用尽，本次跳过依赖查询（按中性分 8 计）"
     if status in ("timeout", "unsupported", "error"):
         return DEPS_NEUTRAL, "依赖信息未获取（网络失败或超时），按中性分 8 计"
     if status == "none" or oldest_days is None:

@@ -337,6 +337,24 @@ def _npm_fetch(name: str, version: str) -> int | None:
         return None
 
 
+def empty_result(status: str = "none") -> dict:
+    """统一的空结果。status 用 skipped 表示「时间预算用尽没查」，与失败区分。"""
+    return {
+        "status": status,
+        "ecosystem": "none",
+        "count": 0,
+        "oldest_pkg": None,
+        "oldest_days": None,
+        "oldest_scope": None,
+        "oldest_runtime_pkg": None,
+        "oldest_runtime_days": None,
+        "runtime_count": 0,
+        "dev_count": 0,
+        "items": [],
+        "file": "",
+    }
+
+
 def analyze_deps(repo_path: str) -> dict:
     """返回 CONTRACT.md 里的 deps 结构。永不抛异常。"""
     try:
