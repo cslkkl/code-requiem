@@ -149,15 +149,23 @@ python -m venv .venv
 
 分析层不需要任何配置就能跑。**LLM 只是最后一步的润色，不配也能出结果，只是文档变成纯指标表。**
 
-### 方式一：Hugging Face Token（部署在 Spaces 时用这个）
+### 方式一：Hugging Face Token（线上部署用这个）
 
 1. 打开 <https://huggingface.co/settings/tokens>
 2. 点 **Create new token**，类型选 **Read** 就够（不要给 write 权限）
 3. 复制生成的 `hf_...` 字符串
-4. 填进 HF Spaces：**Settings → Variables and secrets → New secret**
-   - **Name**：`HF_TOKEN`
-   - **Value**：你的 `hf_...`
-5. Space 会自动重启，顶部徽标变成绿色即配置成功
+4. 填进托管平台的 Secrets（线上用的是 Streamlit Community Cloud：
+   **Manage app → Settings → Secrets**）：
+
+   ```toml
+   GITHUB_TOKEN = "ghp_..."   # 必需，否则匿名 60 次/小时，第 5 个访客就撞限流
+   HF_TOKEN = "hf_..."        # 可选，AI 叙事
+   ```
+
+5. 保存后应用自动重启，侧栏「AI 叙事」与「GitHub 配额」两行变成绿色即配置成功
+
+> 部署到 Hugging Face Spaces 已经不可行：免费版 `sdk=streamlit` 返回 400，
+> `gradio`/`docker` 需要 PRO。详见 [docs/DEPLOY.md](docs/DEPLOY.md)。
 
 本地开发同理，用环境变量：
 

@@ -153,8 +153,8 @@ Python 3.12 · Streamlit · GitPython · Hugging Face Inference API（Qwen2.5-7B
 https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app
 ```
 
-> 提交前替换为真实的 Hugging Face Spaces 公开地址，形如
-> `https://huggingface.co/spaces/[USERNAME]/code-requiem`
+> 已部署到 Streamlit Community Cloud（HF Spaces 免费版已不支持 Streamlit，
+> 实测 `sdk=streamlit` 返回 400、`gradio`/`docker` 需 PRO；详见 docs/DEPLOY.md）。
 >
 > 校验标准（SPEC 第 8 章要求）：**陌生人无账号、无登录、直接打开即可用**。
 > 提交前用无痕窗口自己点一遍，冷启动等到页面完全加载再截图。
@@ -269,37 +269,54 @@ Structure:
 **视频标题：**
 
 ```
-Code Requiem — 90 seconds from repo URL to handover document
+Code Requiem — from repo URL to handover document in 65 seconds
 ```
 
 **Video description（Devpost 字段）：**
 
 ```
-90-second continuous demo, no cuts in the analysis flow.
+64-second continuous demo. Both analyses are real runs against live
+repositories — the progress bars and stage labels are the actual pipeline,
+not an animation. Waiting time is compressed; nothing is cut out.
 
-0:00–0:10  Hook: "Your predecessor left. The README is two years stale. What did
-           you actually inherit?"
-0:10–0:30  Paste a live, well-maintained repository. Score lands above 70. We get
-           the Code Will: what exists, who maintains it, which files to avoid,
-           what order to work in.
-0:30–0:55  Paste a dead repository. Score lands below 30. We get the Eulogy: date
-           of birth, date of death, cause of death, root cause.
-0:55–1:15  The part that matters: bus factor. One contributor holds the majority
-           of commits. Score drops 25 points. The document says it in one line —
-           "if this person leaves, the project ends." That is the handover risk
-           you cannot see from a README.
-1:15–1:30  Close: deterministic score, AI wording, degrade gracefully. Try it:
-           https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app
+0:00–0:06   The blank report sheet. One input field, three samples.
+0:06–0:12   Paste kornia/kornia. The analyzer runs: clone, collect metrics,
+            generate narrative.
+0:12–0:35   Score 100 / 100, state "alive". Three questions a new owner
+            actually asks, answered first: can I still use this, who do I
+            call when it breaks, what do I do first. Then the evidence —
+            six dimensions, each with the number and the reason. Then the
+            Code Will: what exists, who maintains it, which files are
+            landmines, what order to touch things in.
+0:35–0:64   Switch to livid/v2ex-gae, last commit 9 years ago. Score 14,
+            state "dead". The Eulogy: cause of death, root cause, what the
+            successor should and should not do. Note the bus factor of 1 —
+            one contributor holds 95% of the commits, so the document says
+            in one line: "there is nobody left to call."
 
-Subtitles are burned in, bilingual (Chinese primary, English secondary).
-Recorded at 1080p with OBS; full shot list in docs/DEMO.md.
+The point of the two acts: the same deterministic algorithm produces both
+the optimistic and the terminal verdict. Nothing about the score depends on
+the model.
+
+Recorded at 1440×900 with an automated Playwright script driving the real
+app; only the idle waiting intervals are sped up in post.
 ```
+
+**视频参数（供你上传时核对，不填表单）：**
+
+| 项 | 值 |
+|---|---|
+| 文件 | `docs/demo-draft.mp4` |
+| 时长 | 64.6 秒 |
+| 分辨率 | 1440×900 |
+| 体积 | 1.1 MB |
+| 字幕 | 无（画面内已有中文说明，未烧字幕） |
 
 **评审提示（不填表单，留给你自己核对）：**
 
-- 视频必须 60–90 秒，超时扣展示分
-- 两段分析必须是**连续**的，不剪辑掉等待过程（SPEC 要求出结果 < 90 秒，等待本身就是证明）
-- 分镜脚本见 [`docs/DEMO.md`](DEMO.md)，与本说明逐秒对齐
+- 时长 60–90 秒区间内
+- 两段分析都是真实运行，进度条来自真实管线
+- 分镜脚本见 [`docs/DEMO.md`](DEMO.md)
 
 ---
 

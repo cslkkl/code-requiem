@@ -56,11 +56,11 @@ git -c "http.https://github.com/.proxy=" push origin main
 ## 待办
 
 - [x] 线上部署 → <https://code-requiem-iczezzcmbgqssvxkaciarxe.streamlit.app>（Streamlit Community Cloud）
-- [ ] 线上 Secrets 待配：`GITHUB_TOKEN`（必需，否则 60 次/小时）、`HF_TOKEN`（可选，AI 叙事）
+- [x] 线上 Secrets 已配：`GITHUB_TOKEN` + `HF_TOKEN`，侧栏两行状态均为绿
 - [x] 90 秒 SLA（加 `BUDGET_SEC=75` 全局预算）
 - [x] 界面截图（4 张，docs/screenshots/）
-- [ ] 60-90 秒演示视频
-- [ ] Devpost 七项提交（`docs/DEVPOST.md` 已填真实地址，待上传视频）
+- [x] 60-90 秒演示视频（64.6 秒，`docs/demo-draft.mp4`，上传文案见 [docs/VIDEO-UPLOAD.md](docs/VIDEO-UPLOAD.md)）
+- [ ] Devpost 七项提交（`docs/DEVPOST.md` 已填真实地址；待视频上传后补 `[VIDEO_URL]`）
 
 ## 活跃坑
 
@@ -90,6 +90,7 @@ git -c "http.https://github.com/.proxy=" push origin main
 - 部署指南 → [docs/DEPLOY.md](docs/DEPLOY.md)
 - 提交材料 → [docs/DEVPOST.md](docs/DEVPOST.md)
 - 演示脚本 → [docs/DEMO.md](docs/DEMO.md)
+- 视频上传文案 → [docs/VIDEO-UPLOAD.md](docs/VIDEO-UPLOAD.md)
 - 实现规格 → [docs/SPEC.md](docs/SPEC.md)（唯一事实来源）
 - 与 SPEC 的偏离记录 → [docs/SPEC-NOTES.md](docs/SPEC-NOTES.md)
 - 验收结果 → [docs/verification.json](docs/verification.json)
