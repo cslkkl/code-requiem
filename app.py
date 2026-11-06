@@ -1476,6 +1476,16 @@ def main() -> None:
             st.session_state["current_url"] = url
             forced = bool(st.session_state.get("force_refresh"))
 
+            # 开始新分析前，先把上一次的结果清掉并重跑一次。
+            # Streamlit 在脚本运行期间不会移除上一轮的元素：如果这里直接
+            # 开始分析，屏幕上会残留上一个仓库的分数与结论（演示视频里
+            # v2ex-gae 正在跑，下面却显示 kornia 的「451 位贡献者」），
+            # 观众会以为数据错了。清空 + 重跑一次是瞬时的，之后才开始分析。
+            if st.session_state.get("result") is not None:
+                st.session_state["result"] = None
+                st.session_state["autorun"] = True
+                st.rerun()
+
             # ── 阶段一：指标。50 秒左右，进度条按 analyzer 的真实阶段推进。
             try:
                 metrics, timings, error = analyze_phase(url)
